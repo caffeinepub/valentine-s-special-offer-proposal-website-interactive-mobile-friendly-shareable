@@ -1,0 +1,167 @@
+{
+  "kind": "build_request",
+  "title": "Pivot app to a Bitcoin mining web dashboard (no educational/demo wording)",
+  "priority": "normal",
+  "requirements": [
+    {
+      "id": "REQ-8",
+      "text": "Replace the current Valentine proposal app user experience with a Bitcoin mining-themed website, removing Valentine-specific screens, components, and copy from the primary app flow (header, landing, and main content). All user-facing text must be in English and must not mention or label the site as “educational”, “demo”, “training”, “simulation”, or similar.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "recent-messages-4"
+        ],
+        "quotes": [
+          "Create fully functional Bitcoin mining website for educational purposes but don’t mention educational or demo purpose in it please"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Visiting the app shows a Bitcoin mining-themed interface rather than Valentine proposal content (no “Valentine”, hearts, romantic proposal language, or related CTAs).",
+        "No user-facing text contains the words “educational”, “demo”, “training”, “simulation”, or equivalent phrasing.",
+        "All user-facing text is in English."
+      ]
+    },
+    {
+      "id": "REQ-9",
+      "text": "Implement a mining dashboard UI that supports: (1) a prominent status indicator (Active/Inactive), (2) start/stop controls, (3) current hashrate display, (4) session runtime, (5) estimated earnings counters, and (6) a recent activity/events list (e.g., session started, session stopped, payout requested).",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "recent-messages-4"
+        ],
+        "quotes": [
+          "Create fully functional Bitcoin mining website..."
+        ]
+      },
+      "acceptanceCriteria": [
+        "Dashboard provides start/stop controls and clearly indicates whether mining is active.",
+        "Dashboard displays current hashrate, runtime, estimated earnings, and a recent activity list.",
+        "UI remains usable on mobile screens (no horizontal scrolling for primary dashboard content)."
+      ]
+    },
+    {
+      "id": "REQ-10",
+      "text": "Add a settings/configuration UI to let the signed-in user configure mining-related parameters, including at minimum: a mining profile name, a target hashrate value (numeric), a power usage value (numeric), an electricity cost value (numeric), and a Bitcoin payout address text field. Persist these settings per user so they are restored on refresh and on subsequent sign-in.",
+      "target": "both",
+      "source": {
+        "messageIds": [
+          "recent-messages-4"
+        ],
+        "quotes": [
+          "Create fully functional Bitcoin mining website..."
+        ]
+      },
+      "acceptanceCriteria": [
+        "User can edit and save the listed mining parameters in the UI.",
+        "After refresh, the saved settings are restored for the same signed-in user.",
+        "Settings are stored and retrieved via backend APIs (not only in localStorage) for authenticated users."
+      ]
+    },
+    {
+      "id": "REQ-11",
+      "text": "Extend the backend canister to store and retrieve per-caller mining configuration and mining state, including at minimum: config fields from REQ-10, whether mining is active, last start timestamp, cumulative runtime, cumulative estimated earnings, and an append-only list of mining events. Provide backend methods to (a) get current state, (b) update configuration, (c) start mining, (d) stop mining, and (e) fetch recent events.",
+      "target": "backend",
+      "source": {
+        "messageIds": [
+          "recent-messages-4"
+        ],
+        "quotes": [
+          "Create fully functional Bitcoin mining website..."
+        ]
+      },
+      "acceptanceCriteria": [
+        "Backend exposes methods for getting mining state, updating config, starting, stopping, and fetching events for the current caller.",
+        "Calls are permission-gated consistently with existing access control patterns (only authorized users can read/write their own mining data).",
+        "Starting/stopping mining updates state and records corresponding events."
+      ]
+    },
+    {
+      "id": "REQ-12",
+      "text": "Implement a payouts/withdrawals UI flow for signed-in users that allows requesting a payout to the saved Bitcoin payout address, shows a payout history table (requested amount, address, status, timestamp), and reflects status updates stored in the backend.",
+      "target": "both",
+      "source": {
+        "messageIds": [
+          "recent-messages-4"
+        ],
+        "quotes": [
+          "Create fully functional Bitcoin mining website..."
+        ]
+      },
+      "acceptanceCriteria": [
+        "User can submit a payout request from the UI and it is stored in the backend.",
+        "UI displays payout history pulled from the backend.",
+        "Payout request uses the currently saved payout address by default and allows changing it before submitting."
+      ]
+    },
+    {
+      "id": "REQ-13",
+      "text": "Replace the existing Valentine-themed visual system (colors/tokens and imagery usage) with a coherent Bitcoin/mining-themed visual style applied consistently across the site (colors, typography, spacing, component styling).",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "recent-messages-4"
+        ],
+        "quotes": [
+          "Create fully functional Bitcoin mining website..."
+        ]
+      },
+      "acceptanceCriteria": [
+        "The app uses a consistent mining/Bitcoin aesthetic across header, landing/dashboard, cards, and buttons.",
+        "Valentine-specific color palette and heart/romance styling are no longer visually dominant throughout the UI."
+      ]
+    },
+    {
+      "id": "REQ-14",
+      "text": "Generate and include new custom static image assets for the Bitcoin mining site and render them from the frontend as static files under frontend/public/assets/generated (do not serve images through the backend). Update the UI to use the new assets instead of the existing Valentine images.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "recent-messages-4"
+        ],
+        "quotes": [
+          "Create fully functional Bitcoin mining website..."
+        ]
+      },
+      "acceptanceCriteria": [
+        "New images exist in frontend/public/assets/generated and are referenced by the React UI via static paths.",
+        "No UI references valentine-hero-bg.dim_1920x1080.png or other Valentine-generated imagery for primary backgrounds/hero sections."
+      ]
+    }
+  ],
+  "constraints": [
+    "Do not add any user-facing wording that describes the site as “educational”, “demo”, “training”, “simulation”, or similar.",
+    "Backend must remain a single Motoko actor with all logic in backend/main.mo.",
+    "Only generate backend/migration.mo if required to preserve/upgrade existing persisted state according to the conditional migration policy.",
+    "Do not edit files under frontend/immutablePaths (frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useInternetIdentity.tsx, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, frontend/src/components/ui).",
+    "Do not implement hidden or non-consensual client-side CPU mining behavior; the site must not perform covert mining in the user’s browser."
+  ],
+  "nonGoals": [
+    "Integrating with real Bitcoin mining hardware, mining pools, or performing actual proof-of-work mining on users’ devices or within the canister.",
+    "Third-party authentication providers (use Internet Identity only).",
+    "Real-time communication via WebSockets or push notifications."
+  ],
+  "imageRequirements": {
+    "required": [
+      "Bitcoin mining hero background illustration with abstract circuitry and subtle Bitcoin motifs (mining-hero-bg.dim_1920x1080.png)",
+      "Minimal icon sheet with a Bitcoin symbol, pickaxe, chip, and lightning bolt in a consistent flat style (mining-icons.dim_512x512.png)",
+      "Illustration of a mining rig (stylized ASIC rows) on a dark background (mining-rig-illustration.dim_1600x900.png)"
+    ],
+    "edits": []
+  },
+  "userProfileUpdate": {
+    "goalsToAdd": [
+      "Build a Bitcoin mining-themed web dashboard application without any educational/demo labeling in UI text."
+    ],
+    "goalsToRemove": [
+      "Build a Valentine proposal/special-offer website."
+    ],
+    "preferencesToAdd": [
+      "All user-facing text must be English and must not mention that the site is educational or a demo."
+    ],
+    "preferencesToRemove": [],
+    "miscToAdd": [],
+    "miscToRemove": [],
+    "fieldsToSet": {},
+    "fieldsToDelete": []
+  }
+}

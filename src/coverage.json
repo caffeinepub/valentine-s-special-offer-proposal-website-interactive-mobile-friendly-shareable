@@ -1,0 +1,199 @@
+{
+  "kind": "coverage_report",
+  "version": "1.0",
+  "generatedAt": "2026-02-09T23:17:38.164Z",
+  "sources": {
+    "buildRequest": true,
+    "implementationPlan": true
+  },
+  "requirements": {
+    "total": 7,
+    "implemented": 6,
+    "items": [
+      {
+        "id": "REQ-10",
+        "summary": "Add a settings/configuration UI to let the signed-in user configure mining-related parameters, including at minimum: a mining profile name, a target hashrate value (numeric), a power usage value (numeric), an electricity cost value (numeric), and a Bitcoin payout address text field. Persist these settings per user so they are restored on refresh and on subsequent sign-in.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/MiningSettings.tsx",
+          "frontend/src/hooks/useMining.ts",
+          "frontend/src/components/ProfileSetupModal.tsx",
+          "frontend/src/hooks/useQueries.ts",
+          "frontend/src/components/MiningAppShell.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/MiningSettings.tsx",
+          "frontend/src/hooks/useMining.ts",
+          "frontend/src/components/ProfileSetupModal.tsx",
+          "frontend/src/hooks/useQueries.ts",
+          "frontend/src/components/MiningAppShell.tsx"
+        ]
+      },
+      {
+        "id": "REQ-11",
+        "summary": "Extend the backend canister to store and retrieve per-caller mining configuration and mining state, including at minimum: config fields from REQ-10, whether mining is active, last start timestamp, cumulative runtime, cumulative estimated earnings, and an append-only list of mining events. Provide backend methods to (a) get current state, (b) update configuration, (c) start mining, (d) stop mining, and (e) fetch recent events.",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
+      },
+      {
+        "id": "REQ-12",
+        "summary": "Implement a payouts/withdrawals UI flow for signed-in users that allows requesting a payout to the saved Bitcoin payout address, shows a payout history table (requested amount, address, status, timestamp), and reflects status updates stored in the backend.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/Payouts.tsx",
+          "frontend/src/hooks/usePayouts.ts",
+          "frontend/src/components/MiningAppShell.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/Payouts.tsx",
+          "frontend/src/hooks/usePayouts.ts",
+          "frontend/src/components/MiningAppShell.tsx"
+        ]
+      },
+      {
+        "id": "REQ-13",
+        "summary": "Replace the existing Valentine-themed visual system (colors/tokens and imagery usage) with a coherent Bitcoin/mining-themed visual style applied consistently across the site (colors, typography, spacing, component styling).",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/index.css",
+          "frontend/tailwind.config.js",
+          "frontend/src/components/MiningHeader.tsx",
+          "frontend/src/components/MiningDashboard.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/index.css",
+          "frontend/tailwind.config.js",
+          "frontend/src/components/MiningHeader.tsx",
+          "frontend/src/components/MiningDashboard.tsx"
+        ]
+      },
+      {
+        "id": "REQ-14",
+        "summary": "Generate and include new custom static image assets for the Bitcoin mining site and render them from the frontend as static files under frontend/public/assets/generated (do not serve images through the backend). Update the UI to use the new assets instead of the existing Valentine images.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/public/assets/generated/mining-hero-bg.dim_1920x1080.png",
+          "frontend/public/assets/generated/mining-icons.dim_512x512.png",
+          "frontend/public/assets/generated/mining-rig-illustration.dim_1600x900.png",
+          "frontend/src/components/MiningDashboard.tsx",
+          "frontend/src/components/MiningHeader.tsx",
+          "frontend/public/assets/generated/valentine-hero-bg.dim_1920x1080.png",
+          "frontend/public/assets/generated/valentine-icons.dim_512x512.png",
+          "frontend/public/assets/generated/valentine-celebration.dim_1600x900.png"
+        ],
+        "matchedFiles": [
+          "frontend/public/assets/generated/mining-hero-bg.dim_1920x1080.png",
+          "frontend/public/assets/generated/mining-icons.dim_512x512.png",
+          "frontend/public/assets/generated/mining-rig-illustration.dim_1600x900.png",
+          "frontend/src/components/MiningDashboard.tsx",
+          "frontend/src/components/MiningHeader.tsx",
+          "frontend/public/assets/generated/valentine-hero-bg.dim_1920x1080.png",
+          "frontend/public/assets/generated/valentine-icons.dim_512x512.png",
+          "frontend/public/assets/generated/valentine-celebration.dim_1600x900.png"
+        ]
+      },
+      {
+        "id": "REQ-8",
+        "summary": "Replace the current Valentine proposal app user experience with a Bitcoin mining-themed website, removing Valentine-specific screens, components, and copy from the primary app flow (header, landing, and main content). All user-facing text must be in English and must not mention or label the site as “educational”, “demo”, “training”, “simulation”, or similar.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/App.tsx",
+          "frontend/index.html",
+          "frontend/src/components/MiningAppShell.tsx",
+          "frontend/src/components/MiningHeader.tsx",
+          "frontend/src/components/ProposalFlow.tsx",
+          "frontend/src/components/ProposalHeader.tsx",
+          "frontend/src/components/SuccessView.tsx",
+          "frontend/src/components/AlternateView.tsx",
+          "frontend/src/components/CustomizeDialog.tsx",
+          "frontend/src/components/ResponseNoteForm.tsx",
+          "frontend/src/components/ShareLinkButton.tsx",
+          "frontend/src/hooks/useProposalConfig.ts",
+          "frontend/src/hooks/useProposalResponse.ts",
+          "frontend/src/types/proposal.ts",
+          "frontend/src/utils/shareLink.ts"
+        ],
+        "matchedFiles": [
+          "frontend/src/App.tsx",
+          "frontend/index.html",
+          "frontend/src/components/MiningAppShell.tsx",
+          "frontend/src/components/MiningHeader.tsx",
+          "frontend/src/components/ProposalFlow.tsx",
+          "frontend/src/components/ProposalHeader.tsx",
+          "frontend/src/components/SuccessView.tsx",
+          "frontend/src/components/AlternateView.tsx",
+          "frontend/src/components/CustomizeDialog.tsx",
+          "frontend/src/components/ResponseNoteForm.tsx",
+          "frontend/src/components/ShareLinkButton.tsx",
+          "frontend/src/hooks/useProposalConfig.ts",
+          "frontend/src/hooks/useProposalResponse.ts",
+          "frontend/src/types/proposal.ts",
+          "frontend/src/utils/shareLink.ts"
+        ]
+      },
+      {
+        "id": "REQ-9",
+        "summary": "Implement a mining dashboard UI that supports: (1) a prominent status indicator (Active/Inactive), (2) start/stop controls, (3) current hashrate display, (4) session runtime, (5) estimated earnings counters, and (6) a recent activity/events list (e.g., session started, session stopped, payout requested).",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/MiningDashboard.tsx",
+          "frontend/src/hooks/useMining.ts",
+          "frontend/src/components/MiningAppShell.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/MiningDashboard.tsx",
+          "frontend/src/hooks/useMining.ts",
+          "frontend/src/components/MiningAppShell.tsx"
+        ]
+      }
+    ]
+  },
+  "changedFiles": [
+    "backend/main.mo",
+    "backend/migration.mo",
+    "build-request.json",
+    "build-template/README.md",
+    "feature_evidence.json",
+    "frontend-file-summaries.txt",
+    "frontend-implementation-plan.json",
+    "frontend/index.html",
+    "frontend/public/assets/generated/mining-hero-bg.dim_1920x1080.png",
+    "frontend/public/assets/generated/mining-icons.dim_512x512.png",
+    "frontend/public/assets/generated/mining-rig-illustration.dim_1600x900.png",
+    "frontend/public/assets/generated/valentine-celebration.dim_1600x900.png",
+    "frontend/public/assets/generated/valentine-hero-bg.dim_1920x1080.png",
+    "frontend/public/assets/generated/valentine-icons.dim_512x512.png",
+    "frontend/src/App.tsx",
+    "frontend/src/backend.d.ts",
+    "frontend/src/backend.ts",
+    "frontend/src/components/AlternateView.tsx",
+    "frontend/src/components/CustomizeDialog.tsx",
+    "frontend/src/components/MiningAppShell.tsx",
+    "frontend/src/components/MiningDashboard.tsx",
+    "frontend/src/components/MiningHeader.tsx",
+    "frontend/src/components/MiningSettings.tsx",
+    "frontend/src/components/Payouts.tsx",
+    "frontend/src/components/ProfileSetupModal.tsx",
+    "frontend/src/components/ProposalFlow.tsx",
+    "frontend/src/components/ProposalHeader.tsx",
+    "frontend/src/components/ResponseNoteForm.tsx",
+    "frontend/src/components/ShareLinkButton.tsx",
+    "frontend/src/components/SuccessView.tsx",
+    "frontend/src/declarations/backend.did.d.ts",
+    "frontend/src/declarations/backend.did.js",
+    "frontend/src/hooks/useMining.ts",
+    "frontend/src/hooks/usePayouts.ts",
+    "frontend/src/hooks/useProposalConfig.ts",
+    "frontend/src/hooks/useProposalResponse.ts",
+    "frontend/src/hooks/useQueries.ts",
+    "frontend/src/index.css",
+    "frontend/src/types/proposal.ts",
+    "frontend/src/utils/shareLink.ts",
+    "frontend/tailwind.config.js",
+    "project_state.json",
+    "scratch/component-selection.json",
+    "spec.md",
+    "spec_vs_diff_report.json"
+  ]
+}

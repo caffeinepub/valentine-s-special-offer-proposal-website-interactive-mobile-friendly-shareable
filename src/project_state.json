@@ -1,0 +1,169 @@
+{
+  "schemaVersion": "1.0.0",
+  "projectStateVersion": 5,
+  "summary": "Pivot project to build a fully functional Bitcoin mining website, with no mention that it is educational or a demo.",
+  "architectural_notes": [
+    "Keep it simple: static HTML/CSS/JS site suitable for easy hosting (e.g., GitHub Pages/Netlify).",
+    "Responsive-first design for mobile viewing.",
+    "Project scope has changed from a Valentine proposal site to a Bitcoin mining website."
+  ],
+  "known_issues": [],
+  "isFixRequest": false,
+  "imageRequirements": "## Required Images\n- Bitcoin mining hero background illustration with abstract circuitry and subtle Bitcoin motifs (mining-hero-bg.dim_1920x1080.png)\n- Minimal icon sheet with a Bitcoin symbol, pickaxe, chip, and lightning bolt in a consistent flat style (mining-icons.dim_512x512.png)\n- Illustration of a mining rig (stylized ASIC rows) on a dark background (mining-rig-illustration.dim_1600x900.png)",
+  "existing_features": [
+    {
+      "id": "feature-create-a-mobile-first-valentine-proposal-website-that-presents-a-special-offer-to-the-user-s-girlfriend-and-guides-her-through-a-short-romantic-flow-landing-offer-details-proposal-question-all-user-facing-text-must-be-in-english",
+      "title": "Create a mobile-first Valentine proposal website that presents a “special offer” to the user’s girlfriend and guides her through a short, romantic flow (landing → offer details → proposal question). All user-facing text must be in English.",
+      "reqIds": [
+        "REQ-1"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-an-interactive-acceptance-flow-with-clear-outcomes-yes-leads-to-a-celebration-success-view-and-next-steps-details-no-leads-to-a-gentle-alternate-view-that-allows-reconsideration-e-g-ask-me-again-return-to-the-question-without-shaming-language",
+      "title": "Implement an interactive acceptance flow with clear outcomes: “Yes” leads to a celebration/success view and next-steps details; “No” leads to a gentle alternate view that allows reconsideration (e.g., “Ask me again” / return to the question) without shaming language.",
+      "reqIds": [
+        "REQ-2"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-customization-experience-so-the-user-can-edit-the-proposal-content-sender-name-girlfriend-name-offer-title-a-short-message-date-time-location-and-a-special-offer-details-list-persist-these-inputs-locally-in-the-browser-so-the-site-remains-customized-on-refresh",
+      "title": "Add a customization experience so the user can edit the proposal content: sender name, girlfriend name, offer title, a short message, date/time, location, and a “special offer details” list. Persist these inputs locally in the browser so the site remains customized on refresh.",
+      "reqIds": [
+        "REQ-3"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-provide-a-shareable-link-mechanism-that-allows-the-user-to-send-the-customized-proposal-to-the-girlfriend-e-g-generate-a-url-that-reproduces-the-customized-content-on-another-device-browser",
+      "title": "Provide a shareable-link mechanism that allows the user to send the customized proposal to the girlfriend (e.g., generate a URL that reproduces the customized content on another device/browser).",
+      "reqIds": [
+        "REQ-4"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-persist-the-girlfriend-s-response-yes-no-optional-short-note-to-the-backend-canister-so-the-response-can-be-retrieved-later-expose-backend-methods-to-submit-and-fetch-the-latest-response-for-the-current-caller",
+      "title": "Persist the girlfriend’s response (Yes/No + optional short note) to the backend canister so the response can be retrieved later. Expose backend methods to submit and fetch the latest response for the current caller.",
+      "reqIds": [
+        "REQ-5"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-create-a-coherent-valentine-themed-visual-style-and-apply-it-consistently-across-the-site-colors-typography-spacing-components-do-not-use-a-blue-purple-default-theme-pick-a-distinct-valentine-palette-and-ensure-strong-readability-and-contrast",
+      "title": "Create a coherent Valentine-themed visual style and apply it consistently across the site (colors, typography, spacing, components). Do not use a blue/purple default theme; pick a distinct Valentine palette and ensure strong readability and contrast.",
+      "reqIds": [
+        "REQ-6"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-generate-and-include-custom-static-image-assets-for-the-valentine-site-and-render-them-from-the-frontend-as-static-files-do-not-serve-images-through-the-backend",
+      "title": "Generate and include custom static image assets for the Valentine site, and render them from the frontend as static files (do not serve images through the backend).",
+      "reqIds": [
+        "REQ-7"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-replace-the-current-valentine-proposal-app-user-experience-with-a-bitcoin-mining-themed-website-removing-valentine-specific-screens-components-and-copy-from-the-primary-app-flow-header-landing-and-main-content-all-user-facing-text-must-be-in-english-and-must-not-mention-or-label-the-site-as-educational-demo-training-simulation-or-similar",
+      "title": "Replace the current Valentine proposal app user experience with a Bitcoin mining-themed website, removing Valentine-specific screens, components, and copy from the primary app flow (header, landing, and main content). All user-facing text must be in English and must not mention or label the site as “educational”, “demo”, “training”, “simulation”, or similar.",
+      "reqIds": [
+        "REQ-8"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-a-mining-dashboard-ui-that-supports-1-a-prominent-status-indicator-active-inactive-2-start-stop-controls-3-current-hashrate-display-4-session-runtime-5-estimated-earnings-counters-and-6-a-recent-activity-events-list-e-g-session-started-session-stopped-payout-requested",
+      "title": "Implement a mining dashboard UI that supports: (1) a prominent status indicator (Active/Inactive), (2) start/stop controls, (3) current hashrate display, (4) session runtime, (5) estimated earnings counters, and (6) a recent activity/events list (e.g., session started, session stopped, payout requested).",
+      "reqIds": [
+        "REQ-9"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-settings-configuration-ui-to-let-the-signed-in-user-configure-mining-related-parameters-including-at-minimum-a-mining-profile-name-a-target-hashrate-value-numeric-a-power-usage-value-numeric-an-electricity-cost-value-numeric-and-a-bitcoin-payout-address-text-field-persist-these-settings-per-user-so-they-are-restored-on-refresh-and-on-subsequent-sign-in",
+      "title": "Add a settings/configuration UI to let the signed-in user configure mining-related parameters, including at minimum: a mining profile name, a target hashrate value (numeric), a power usage value (numeric), an electricity cost value (numeric), and a Bitcoin payout address text field. Persist these settings per user so they are restored on refresh and on subsequent sign-in.",
+      "reqIds": [
+        "REQ-10"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-a-payouts-withdrawals-ui-flow-for-signed-in-users-that-allows-requesting-a-payout-to-the-saved-bitcoin-payout-address-shows-a-payout-history-table-requested-amount-address-status-timestamp-and-reflects-status-updates-stored-in-the-backend",
+      "title": "Implement a payouts/withdrawals UI flow for signed-in users that allows requesting a payout to the saved Bitcoin payout address, shows a payout history table (requested amount, address, status, timestamp), and reflects status updates stored in the backend.",
+      "reqIds": [
+        "REQ-12"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-replace-the-existing-valentine-themed-visual-system-colors-tokens-and-imagery-usage-with-a-coherent-bitcoin-mining-themed-visual-style-applied-consistently-across-the-site-colors-typography-spacing-component-styling",
+      "title": "Replace the existing Valentine-themed visual system (colors/tokens and imagery usage) with a coherent Bitcoin/mining-themed visual style applied consistently across the site (colors, typography, spacing, component styling).",
+      "reqIds": [
+        "REQ-13"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-generate-and-include-new-custom-static-image-assets-for-the-bitcoin-mining-site-and-render-them-from-the-frontend-as-static-files-under-frontend-public-assets-generated-do-not-serve-images-through-the-backend-update-the-ui-to-use-the-new-assets-instead-of-the-existing-valentine-images",
+      "title": "Generate and include new custom static image assets for the Bitcoin mining site and render them from the frontend as static files under frontend/public/assets/generated (do not serve images through the backend). Update the UI to use the new assets instead of the existing Valentine images.",
+      "reqIds": [
+        "REQ-14"
+      ],
+      "version": 1
+    }
+  ],
+  "new_feature_requests": [
+    {
+      "id": "AR-1",
+      "summary": "Single-page Valentine proposal website (landing + proposal message + call-to-action)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-2",
+      "summary": "Interactive acceptance flow (e.g., Yes/No buttons leading to success message and next-steps)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-3",
+      "summary": "Customize content inputs (names, message, date/place, special offer details)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-4",
+      "summary": "Deployable, mobile-friendly site (responsive layout; works as a shareable link)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-5",
+      "summary": "Create a fully functional Bitcoin mining website",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-6",
+      "summary": "Do not mention or label the site as educational, demo, or for training purposes anywhere in UI copy",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-10",
+      "summary": "Extend the backend canister to store and retrieve per-caller mining configuration and mining state, including at minimum: config fields from REQ-10, whether mining is active, last start timestamp, cumulative runtime, cumulative estimated earnings, and an append-only list of mining events. Provide backend methods to (a) get current state, (b) update configuration, (c) start mining, (d) stop mining, and (e) fetch recent events.",
+      "reqIds": [
+        "REQ-11"
+      ],
+      "status": "pending"
+    }
+  ],
+  "gameProjectType": "none",
+  "projectName": "Bitcoin mining website",
+  "clarification_mode": "instant",
+  "clarification_rounds": 0
+}

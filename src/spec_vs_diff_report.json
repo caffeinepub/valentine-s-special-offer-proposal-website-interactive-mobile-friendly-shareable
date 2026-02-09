@@ -1,0 +1,81 @@
+{
+  "kind": "spec_vs_diff_report",
+  "version": "1.0",
+  "generatedAt": "2026-02-09T23:17:38.161Z",
+  "summary": "The diff adds a new Bitcoin mining dashboard UI (shell/header/dashboard/settings/payouts) and related React Query hooks, plus mining-themed styling tokens. However, there are gaps around the required generated image assets, payout flow (custom address on request), and remaining heart/Valentine-adjacent wording in the UI footer.",
+  "missing_requirements": [
+    {
+      "id": "REQ-12",
+      "requirement": "Payout request uses the currently saved payout address by default and allows changing it before submitting.",
+      "reason": "The UI lets the user type an optional address, but the payout mutation only submits an amount (no address). This prevents actually requesting a payout to a changed address.",
+      "evidence": [
+        "frontend/src/components/Payouts.tsx",
+        "frontend/src/hooks/usePayouts.ts"
+      ]
+    },
+    {
+      "id": "REQ-14",
+      "requirement": "Include new custom static image assets under frontend/public/assets/generated (hero bg, icon sheet, mining rig illustration) and render them from the frontend; update UI to use new assets.",
+      "reason": "The UI references only the hero background image path, but the diff summary does not show the required assets being added under frontend/public/assets/generated, nor any references to the required icon sheet and mining rig illustration.",
+      "evidence": [
+        "frontend/src/components/MiningDashboard.tsx"
+      ]
+    },
+    {
+      "id": "REQ-8",
+      "requirement": "Remove Valentine/hearts/romantic proposal language and CTAs from the primary app flow.",
+      "reason": "The unauthenticated and authenticated shells include a footer line with a heart symbol (\"Built with ❤️\"), which conflicts with the requirement to remove hearts/romance styling/copy from the primary flow.",
+      "evidence": [
+        "frontend/src/components/MiningAppShell.tsx"
+      ]
+    }
+  ],
+  "hallucinated_features": [
+    {
+      "description": "Profile setup modal requiring the user to enter a name before accessing the mining features.",
+      "reason": "The BuildRequest does not ask for a mandatory profile creation step; it only specifies mining dashboard/settings/payouts functionality for signed-in users.",
+      "evidence": [
+        "frontend/src/components/ProfileSetupModal.tsx",
+        "frontend/src/components/MiningAppShell.tsx"
+      ]
+    },
+    {
+      "description": "Caffeine.ai promotional footer/link added to the main app shell.",
+      "reason": "The BuildRequest does not request adding product attribution or outbound promotional links in the user-facing UI.",
+      "evidence": [
+        "frontend/src/components/MiningAppShell.tsx"
+      ]
+    }
+  ],
+  "confidence": 0.74,
+  "changed_files": [
+    "backend/main.mo",
+    "backend/migration.mo",
+    "frontend-file-summaries.txt",
+    "frontend/index.html",
+    "frontend/src/App.tsx",
+    "frontend/src/components/AlternateView.tsx",
+    "frontend/src/components/CustomizeDialog.tsx",
+    "frontend/src/components/MiningAppShell.tsx",
+    "frontend/src/components/MiningDashboard.tsx",
+    "frontend/src/components/MiningHeader.tsx",
+    "frontend/src/components/MiningSettings.tsx",
+    "frontend/src/components/Payouts.tsx",
+    "frontend/src/components/ProfileSetupModal.tsx",
+    "frontend/src/components/ProposalFlow.tsx",
+    "frontend/src/components/ProposalHeader.tsx",
+    "frontend/src/components/ResponseNoteForm.tsx",
+    "frontend/src/components/ShareLinkButton.tsx",
+    "frontend/src/components/SuccessView.tsx",
+    "frontend/src/hooks/useMining.ts",
+    "frontend/src/hooks/usePayouts.ts",
+    "frontend/src/hooks/useProposalConfig.ts",
+    "frontend/src/hooks/useProposalResponse.ts",
+    "frontend/src/hooks/useQueries.ts",
+    "frontend/src/index.css",
+    "frontend/src/types/proposal.ts",
+    "frontend/src/utils/shareLink.ts",
+    "frontend/tailwind.config.js",
+    "project_state.json"
+  ]
+}
