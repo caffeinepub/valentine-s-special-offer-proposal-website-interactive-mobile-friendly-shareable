@@ -11,9 +11,7 @@ import InviteLinksModule "invite-links/invite-links-module";
 import Random "mo:core/Random";
 import Text "mo:core/Text";
 import Iter "mo:core/Iter";
-import Migration "migration";
 
-(with migration = Migration.run)
 actor {
   let accessControlState = AccessControl.initState();
   include MixinAuthorization(accessControlState);

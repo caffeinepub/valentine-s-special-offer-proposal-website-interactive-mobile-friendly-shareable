@@ -2,24 +2,12 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-replace-the-current-valentine-proposal-app-user-experience-with-a-bitcoin-mining-themed-website-removing-valentine-specific-screens-components-and-copy-from-the-primary-app-flow-header-landing-and-main-content-all-user-facing-text-must-be-in-english-and-must-not-mention-or-label-the-site-as-educational-demo-training-simulation-or-similar",
-      "featureTitle": "Replace the current Valentine proposal app user experience with a Bitcoin mining-themed website, removing Valentine-specific screens, components, and copy from the primary app flow (header, landing, and main content). All user-facing text must be in English and must not mention or label the site as “educational”, “demo”, “training”, “simulation”, or similar.",
+      "featureId": "feature-update-the-dashboard-start-stop-ux-so-the-start-mining-button-is-available-whenever-a-mining-configuration-exists-even-if-miningstate-is-currently-null-empty-do-not-block-the-dashboard-behind-configuration-required-based-solely-on-miningstate-config-instead-use-the-saved-mining-configuration-miningconfig-to-determine-whether-configuration-is-complete-and-allow-starting-mining-from-the-dashboard",
+      "featureTitle": "Update the dashboard start/stop UX so the Start Mining button is available whenever a mining configuration exists, even if miningState is currently null/empty. Do not block the dashboard behind \"Configuration Required\" based solely on miningState.config; instead, use the saved mining configuration (miningConfig) to determine whether configuration is complete, and allow starting mining from the dashboard.",
       "files": [
-        "frontend/index.html",
-        "frontend/src/App.tsx",
-        "frontend/src/components/AlternateView.tsx",
-        "frontend/src/components/CustomizeDialog.tsx",
         "frontend/src/components/MiningAppShell.tsx",
-        "frontend/src/components/MiningHeader.tsx",
-        "frontend/src/components/ProposalFlow.tsx",
-        "frontend/src/components/ProposalHeader.tsx",
-        "frontend/src/components/ResponseNoteForm.tsx",
-        "frontend/src/components/ShareLinkButton.tsx",
-        "frontend/src/components/SuccessView.tsx",
-        "frontend/src/hooks/useProposalConfig.ts",
-        "frontend/src/hooks/useProposalResponse.ts",
-        "frontend/src/types/proposal.ts",
-        "frontend/src/utils/shareLink.ts"
+        "frontend/src/components/MiningDashboard.tsx",
+        "frontend/src/utils/getErrorMessage.ts"
       ],
       "components": [
         "authorization@4.0.0",
@@ -31,15 +19,14 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-8"
+        "REQ-16"
       ],
       "confidence": "high"
     },
     {
-      "featureId": "feature-implement-a-mining-dashboard-ui-that-supports-1-a-prominent-status-indicator-active-inactive-2-start-stop-controls-3-current-hashrate-display-4-session-runtime-5-estimated-earnings-counters-and-6-a-recent-activity-events-list-e-g-session-started-session-stopped-payout-requested",
-      "featureTitle": "Implement a mining dashboard UI that supports: (1) a prominent status indicator (Active/Inactive), (2) start/stop controls, (3) current hashrate display, (4) session runtime, (5) estimated earnings counters, and (6) a recent activity/events list (e.g., session started, session stopped, payout requested).",
+      "featureId": "feature-ensure-the-recent-activity-events-list-reflects-mining-start-stop-actions-immediately-after-the-user-clicks-start-mining-stop-mining-including-when-mining-is-started-for-the-first-time-after-configuration-any-backend-trap-permission-issues-should-be-visible-to-the-user-through-english-error-messages",
+      "featureTitle": "Ensure the recent activity/events list reflects mining start/stop actions immediately after the user clicks Start Mining/Stop Mining, including when mining is started for the first time after configuration. Any backend trap/permission issues should be visible to the user through English error messages.",
       "files": [
-        "frontend/src/components/MiningAppShell.tsx",
         "frontend/src/components/MiningDashboard.tsx",
         "frontend/src/hooks/useMining.ts"
       ],
@@ -53,97 +40,7 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-9"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-add-a-settings-configuration-ui-to-let-the-signed-in-user-configure-mining-related-parameters-including-at-minimum-a-mining-profile-name-a-target-hashrate-value-numeric-a-power-usage-value-numeric-an-electricity-cost-value-numeric-and-a-bitcoin-payout-address-text-field-persist-these-settings-per-user-so-they-are-restored-on-refresh-and-on-subsequent-sign-in",
-      "featureTitle": "Add a settings/configuration UI to let the signed-in user configure mining-related parameters, including at minimum: a mining profile name, a target hashrate value (numeric), a power usage value (numeric), an electricity cost value (numeric), and a Bitcoin payout address text field. Persist these settings per user so they are restored on refresh and on subsequent sign-in.",
-      "files": [
-        "frontend/src/components/MiningAppShell.tsx",
-        "frontend/src/components/MiningSettings.tsx",
-        "frontend/src/components/ProfileSetupModal.tsx",
-        "frontend/src/hooks/useMining.ts",
-        "frontend/src/hooks/useQueries.ts"
-      ],
-      "components": [
-        "authorization@4.0.0",
-        "invite-links@3.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-10"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-implement-a-payouts-withdrawals-ui-flow-for-signed-in-users-that-allows-requesting-a-payout-to-the-saved-bitcoin-payout-address-shows-a-payout-history-table-requested-amount-address-status-timestamp-and-reflects-status-updates-stored-in-the-backend",
-      "featureTitle": "Implement a payouts/withdrawals UI flow for signed-in users that allows requesting a payout to the saved Bitcoin payout address, shows a payout history table (requested amount, address, status, timestamp), and reflects status updates stored in the backend.",
-      "files": [
-        "frontend/src/components/MiningAppShell.tsx",
-        "frontend/src/components/Payouts.tsx",
-        "frontend/src/hooks/usePayouts.ts"
-      ],
-      "components": [
-        "authorization@4.0.0",
-        "invite-links@3.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-12"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-replace-the-existing-valentine-themed-visual-system-colors-tokens-and-imagery-usage-with-a-coherent-bitcoin-mining-themed-visual-style-applied-consistently-across-the-site-colors-typography-spacing-component-styling",
-      "featureTitle": "Replace the existing Valentine-themed visual system (colors/tokens and imagery usage) with a coherent Bitcoin/mining-themed visual style applied consistently across the site (colors, typography, spacing, component styling).",
-      "files": [
-        "frontend/src/components/MiningDashboard.tsx",
-        "frontend/src/components/MiningHeader.tsx",
-        "frontend/src/index.css",
-        "frontend/tailwind.config.js"
-      ],
-      "components": [
-        "authorization@4.0.0",
-        "invite-links@3.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-13"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-generate-and-include-new-custom-static-image-assets-for-the-bitcoin-mining-site-and-render-them-from-the-frontend-as-static-files-under-frontend-public-assets-generated-do-not-serve-images-through-the-backend-update-the-ui-to-use-the-new-assets-instead-of-the-existing-valentine-images",
-      "featureTitle": "Generate and include new custom static image assets for the Bitcoin mining site and render them from the frontend as static files under frontend/public/assets/generated (do not serve images through the backend). Update the UI to use the new assets instead of the existing Valentine images.",
-      "files": [
-        "frontend/src/components/MiningDashboard.tsx",
-        "frontend/src/components/MiningHeader.tsx"
-      ],
-      "components": [
-        "authorization@4.0.0",
-        "invite-links@3.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-14"
+        "REQ-17"
       ],
       "confidence": "high"
     }

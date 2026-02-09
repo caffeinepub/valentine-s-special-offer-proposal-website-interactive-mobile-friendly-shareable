@@ -20,6 +20,10 @@ export function MiningAppShell() {
   const isAuthenticated = !!identity;
   const showProfileSetup = isAuthenticated && !profileLoading && isFetched && userProfile === null;
 
+  const handleNavigateToSettings = () => {
+    setActiveSection('settings');
+  };
+
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen flex flex-col">
@@ -77,7 +81,7 @@ export function MiningAppShell() {
     <div className="min-h-screen flex flex-col">
       <MiningHeader activeSection={activeSection} onSectionChange={setActiveSection} />
       <main className="flex-1 container mx-auto p-4 md:p-6 lg:p-8">
-        {activeSection === 'dashboard' && <MiningDashboard />}
+        {activeSection === 'dashboard' && <MiningDashboard onNavigateToSettings={handleNavigateToSettings} />}
         {activeSection === 'settings' && <MiningSettings />}
         {activeSection === 'payouts' && <Payouts />}
       </main>

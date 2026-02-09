@@ -16,12 +16,13 @@
   "frontend/src/index.css": "Global styles with Bitcoin mining themed OKLCH color palette using dark neutrals and amber/orange accents for both light and dark modes.",
   "frontend/tailwind.config.js": "Tailwind configuration with mining-themed color tokens, monospace font family for technical displays, and custom shadow utilities including glow effect.",
   "frontend/index.html": "HTML entry point with Bitcoin mining dashboard title and metadata.",
-  "frontend/src/components/MiningAppShell.tsx": "Main authenticated application shell that manages navigation between dashboard, settings, and payouts sections, enforces login requirement, and handles profile setup flow.",
+  "frontend/src/components/MiningAppShell.tsx": "Main authenticated application shell that manages navigation between dashboard/settings/payouts sections, enforces login requirement, handles profile setup flow, and passes navigation callback to dashboard for Settings redirection.",
   "frontend/src/components/MiningHeader.tsx": "Header component with Bitcoin branding, navigation tabs for dashboard/settings/payouts, and login/logout functionality with responsive mobile navigation.",
-  "frontend/src/components/MiningDashboard.tsx": "Mining dashboard displaying active/inactive status, start/stop controls, real-time hashrate/runtime/earnings metrics, and recent activity events table.",
+  "frontend/src/components/MiningDashboard.tsx": "Mining dashboard that checks for saved MiningConfig (not just MiningState) to determine if configuration exists, displays start/stop controls when config is available, shows configuration-required card with Settings navigation button when missing, and uses error message utility for actionable toast notifications.",
   "frontend/src/components/MiningSettings.tsx": "Settings panel for configuring mining parameters including profile name, target hashrate, power usage, electricity cost, and Bitcoin payout address with form validation.",
   "frontend/src/components/Payouts.tsx": "Payouts interface showing available balance, payout request form with amount and address fields, and payout history table with status badges.",
   "frontend/src/components/ProfileSetupModal.tsx": "Modal dialog for first-time user profile setup requiring name input before accessing mining features.",
-  "frontend/src/hooks/useMining.ts": "React Query hooks for mining operations including config management, state fetching with auto-refresh when active, events retrieval, and start/stop mutations.",
-  "frontend/src/hooks/usePayouts.ts": "React Query hooks for payout operations including fetching payout history and submitting payout requests with cache invalidation."
+  "frontend/src/hooks/useMining.ts": "React Query hooks for mining operations including config/state/events fetching with auto-refresh when active, and start/stop mutations with enhanced refetch behavior for immediate UI updates.",
+  "frontend/src/hooks/usePayouts.ts": "React Query hooks for payout operations including fetching payout history and submitting payout requests with cache invalidation.",
+  "frontend/src/utils/getErrorMessage.ts": "Utility function that extracts user-friendly English error messages from various error types, prioritizing backend trap messages when available."
 }

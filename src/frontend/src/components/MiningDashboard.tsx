@@ -3,11 +3,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { useGetMiningState, useGetMiningEvents, useStartMining, useStopMining } from '../hooks/useMining';
-import { Play, Square, Zap, Clock, TrendingUp, Loader2 } from 'lucide-react';
+import { useGetMiningConfig, useGetMiningState, useGetMiningEvents, useStartMining, useStopMining } from '../hooks/useMining';
+import { Play, Square, Zap, Clock, TrendingUp, Loader2, Settings } from 'lucide-react';
 import { toast } from 'sonner';
+import { getErrorMessage } from '../utils/getErrorMessage';
 
-export function MiningDashboard() {
+interface MiningDashboardProps {
+  onNavigateToSettings?: () => void;
+}
+
+export function MiningDashboard({ onNavigateToSettings }: MiningDashboardProps) {
+  const { data: miningConfig, isLoading: configLoading } = useGetMiningConfig();
   const { data: miningState, isLoading: stateLoading } = useGetMiningState();
   const { data: events = [], isLoading: eventsLoading } = useGetMiningEvents();
   const startMining = useStartMining();
@@ -17,7 +23,7 @@ export function MiningDashboard() {
   const [currentEarnings, setCurrentEarnings] = useState(0);
 
   const isActive = miningState?.isActive || false;
-  const config = miningState?.config;
+  const config = miningConfig || miningState?.config;
 
   useEffect(() => {
     if (!miningState || !isActive) {
@@ -47,7 +53,8 @@ export function MiningDashboard() {
       await startMining.mutateAsync();
       toast.success('Mining started successfully');
     } catch (error: any) {
-      toast.error(error.message || 'Failed to start mining');
+      const errorMessage = getErrorMessage(error);
+      toast.error(errorMessage);
     }
   };
 
@@ -56,7 +63,8 @@ export function MiningDashboard() {
       await stopMining.mutateAsync();
       toast.success('Mining stopped successfully');
     } catch (error: any) {
-      toast.error(error.message || 'Failed to stop mining');
+      const errorMessage = getErrorMessage(error);
+      toast.error(errorMessage);
     }
   };
 
@@ -77,7 +85,7 @@ export function MiningDashboard() {
     return `${sats.toLocaleString()} sats`;
   };
 
-  if (stateLoading) {
+  if (configLoading || stateLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -94,6 +102,12 @@ export function MiningDashboard() {
             Please configure your mining settings before starting operations.
           </CardDescription>
         </CardHeader>
+        <CardContent>
+          <Button onClick={onNavigateToSettings} className="gap-2">
+            <Settings className="h-4 w-4" />
+            Go to Settings
+          </Button>
+        </CardContent>
       </Card>
     );
   }

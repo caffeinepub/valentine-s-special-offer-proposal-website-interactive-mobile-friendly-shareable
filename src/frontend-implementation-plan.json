@@ -1,259 +1,53 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Bitcoin mining web dashboard pivot (frontend)",
+  "title": "Enable mining start/stop UX when config exists but mining state is missing",
   "requirements": [
     {
-      "id": "REQ-8",
-      "summary": "Replace Valentine proposal UX with a Bitcoin mining dashboard experience and remove Valentine-specific UI/copy from the primary flow.",
+      "id": "REQ-16",
+      "summary": "Make dashboard start/stop controls depend on saved MiningConfig (not MiningState.config) and provide a clear Settings navigation when config is missing.",
       "acceptanceCriteria": [
-        "Visiting the app shows a Bitcoin mining-themed interface rather than Valentine proposal content (no “Valentine”, hearts, romantic proposal language, or related CTAs).",
-        "No user-facing text contains the words “educational”, “demo”, “training”, “simulation”, or equivalent phrasing.",
-        "All user-facing text is in English."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/App.tsx",
-          "operation": "modify",
-          "description": "Replace ProposalHeader/ProposalFlow rendering with a mining dashboard shell (authenticated UI with login + main dashboard panels). Ensure no Valentine/proposal copy remains in the primary flow."
-        },
-        {
-          "path": "frontend/index.html",
-          "operation": "modify",
-          "description": "Update document title and metadata to match the Bitcoin mining dashboard branding and remove Valentine wording."
-        },
-        {
-          "path": "frontend/src/components/MiningAppShell.tsx",
-          "operation": "create",
-          "description": "Create the main authenticated application shell that hosts dashboard/settings/payouts sections and enforces that users must be logged in before seeing mining-related data. Use shadcn-ui layout primitives (e.g., Card, Tabs) for structure. Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/components/MiningHeader.tsx",
-          "operation": "create",
-          "description": "Create a new header with Bitcoin/mining branding, navigation between sections, and Internet Identity login/logout. Use the existing LoginButton component for auth actions and shadcn-ui Button for header controls. Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/components/ProposalFlow.tsx",
-          "operation": "delete",
-          "description": "Remove Valentine proposal primary flow UI so it cannot be navigated to from the main app."
-        },
-        {
-          "path": "frontend/src/components/ProposalHeader.tsx",
-          "operation": "delete",
-          "description": "Remove Valentine proposal header/navigation and its Valentine branding/copy."
-        },
-        {
-          "path": "frontend/src/components/SuccessView.tsx",
-          "operation": "delete",
-          "description": "Remove Valentine proposal success screen and related romantic copy."
-        },
-        {
-          "path": "frontend/src/components/AlternateView.tsx",
-          "operation": "delete",
-          "description": "Remove Valentine proposal decline screen and related romantic copy."
-        },
-        {
-          "path": "frontend/src/components/CustomizeDialog.tsx",
-          "operation": "delete",
-          "description": "Remove Valentine proposal customization UI and any proposal-copy persistence logic associated with it."
-        },
-        {
-          "path": "frontend/src/components/ResponseNoteForm.tsx",
-          "operation": "delete",
-          "description": "Remove proposal note UI that is specific to the Valentine flow."
-        },
-        {
-          "path": "frontend/src/components/ShareLinkButton.tsx",
-          "operation": "delete",
-          "description": "Remove proposal share-link generation UI from the primary app."
-        },
-        {
-          "path": "frontend/src/hooks/useProposalConfig.ts",
-          "operation": "delete",
-          "description": "Remove localStorage/share-link based proposal configuration hook used by the Valentine flow."
-        },
-        {
-          "path": "frontend/src/hooks/useProposalResponse.ts",
-          "operation": "delete",
-          "description": "Remove proposal-response hooks and their queries/mutations from the app."
-        },
-        {
-          "path": "frontend/src/types/proposal.ts",
-          "operation": "delete",
-          "description": "Remove proposal configuration types and defaults used only by the Valentine app."
-        },
-        {
-          "path": "frontend/src/utils/shareLink.ts",
-          "operation": "delete",
-          "description": "Remove proposal share-link encoding/decoding utilities from the app."
-        }
-      ]
-    },
-    {
-      "id": "REQ-9",
-      "summary": "Implement a responsive mining dashboard UI with status indicator, start/stop controls, hashrate, runtime, estimated earnings, and recent activity list.",
-      "acceptanceCriteria": [
-        "Dashboard provides start/stop controls and clearly indicates whether mining is active.",
-        "Dashboard displays current hashrate, runtime, estimated earnings, and a recent activity list.",
-        "UI remains usable on mobile screens (no horizontal scrolling for primary dashboard content)."
+        "After saving settings in the Mining Settings page, returning to the dashboard shows start/stop controls (not only a configuration-required card).",
+        "If no mining configuration exists, the dashboard shows an English message indicating configuration is required and provides a clear path to the Settings section (e.g., a button that navigates to Settings).",
+        "Clicking Start Mining changes the status indicator to Active within one refresh cycle (via react-query invalidation/refetch).",
+        "If startMining fails (e.g., authorization/config missing), the UI shows an English toast error that is actionable (not silent), and the button leaves the system in a consistent state (no stuck loading)."
       ],
       "file_operations": [
         {
           "path": "frontend/src/components/MiningDashboard.tsx",
-          "operation": "create",
-          "description": "Create the dashboard panel with: prominent Active/Inactive indicator, start/stop controls, current hashrate display, session runtime, estimated earnings counters, and a recent events list. Use shadcn-ui components such as Card, Badge, Button, and Table/List patterns for a consistent UI. Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/hooks/useMining.ts",
-          "operation": "create",
-          "description": "Add React Query hooks for mining data and actions: fetch mining state, fetch recent events, start mining, stop mining, and periodic refresh of state while active (UI-only timers must not perform any real mining)."
+          "operation": "modify",
+          "description": "Update dashboard gating logic to use saved miningConfig (via useGetMiningConfig) to determine whether configuration is complete, even when miningState is null; render Start/Stop controls whenever miningConfig exists; when config is missing, show an English configuration-required card with a Settings navigation button; use shared error-message extraction for actionable English toast errors."
         },
         {
           "path": "frontend/src/components/MiningAppShell.tsx",
           "operation": "modify",
-          "description": "Wire MiningDashboard into the shell as the primary section and ensure navigation selects it by default."
+          "description": "Wire dashboard-to-settings navigation by passing a callback/prop to MiningDashboard (e.g., onNavigateToSettings) that switches the active section to 'settings', ensuring the dashboard's configuration-required CTA can take the user directly to Settings."
+        },
+        {
+          "path": "frontend/src/utils/getErrorMessage.ts",
+          "operation": "create",
+          "description": "Add a small utility to normalize backend/agent errors into a clear English message for toasts (prefer backend-provided trap text when available, otherwise use a safe English fallback)."
         }
       ]
     },
     {
-      "id": "REQ-10",
-      "summary": "Add a signed-in user settings UI for mining configuration and persist it via backend APIs so it restores on refresh and subsequent sign-in.",
+      "id": "REQ-17",
+      "summary": "Ensure recent events list updates immediately after start/stop and surface backend errors in English without misleading success feedback.",
       "acceptanceCriteria": [
-        "User can edit and save the listed mining parameters in the UI.",
-        "After refresh, the saved settings are restored for the same signed-in user.",
-        "Settings are stored and retrieved via backend APIs (not only in localStorage) for authenticated users."
+        "After Start Mining succeeds, the events query shows a new \"Started\" event without requiring a full page refresh.",
+        "After Stop Mining succeeds, the events query shows a new \"Stopped\" event with session-duration details (if available) without requiring a full page refresh.",
+        "If the backend rejects the action (e.g., missing config, unauthorized), the frontend displays the backend-provided English error message (or a clear English fallback) and does not show a misleading success toast."
       ],
       "file_operations": [
-        {
-          "path": "frontend/src/components/MiningSettings.tsx",
-          "operation": "create",
-          "description": "Create a settings panel with editable fields: mining profile name, target hashrate (numeric), power usage (numeric), electricity cost (numeric), and Bitcoin payout address. Use shadcn-ui Form primitives (Input, Label, Card, Button) and inline validation/error states. Verify the component's usage instructions before implementing."
-        },
         {
           "path": "frontend/src/hooks/useMining.ts",
           "operation": "modify",
-          "description": "Extend hooks to include getMiningConfig and updateMiningConfig flows, and provide cache invalidation so saved settings are immediately reflected across the dashboard and payouts screens."
-        },
-        {
-          "path": "frontend/src/components/ProfileSetupModal.tsx",
-          "operation": "create",
-          "description": "Implement first-login profile setup to ask for a human-readable name (UserProfile.name) using the authorization component's required profile flow (getCallerUserProfile/saveCallerUserProfile). Use shadcn-ui Dialog, Input, and Button. Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/hooks/useQueries.ts",
-          "operation": "modify",
-          "description": "Add any additional React Query helpers needed for profile setup UX (e.g., invalidate currentUserProfile after save) and ensure profile setup modal does not flash during actor initialization (follow authorization component guidance). Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/components/MiningAppShell.tsx",
-          "operation": "modify",
-          "description": "Gate all mining data views behind Internet Identity login and show ProfileSetupModal when authenticated but missing a user profile; ensure settings panel is reachable from navigation."
-        }
-      ]
-    },
-    {
-      "id": "REQ-12",
-      "summary": "Implement payouts UI for signed-in users: request payout to saved address, show payout history, and reflect backend-stored statuses.",
-      "acceptanceCriteria": [
-        "User can submit a payout request from the UI and it is stored in the backend.",
-        "UI displays payout history pulled from the backend.",
-        "Payout request uses the currently saved payout address by default and allows changing it before submitting."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/components/Payouts.tsx",
-          "operation": "create",
-          "description": "Create a payouts panel with a payout request form (amount + address defaulted from saved mining config but editable) and a payout history table showing requested amount, address, status, and timestamp. Use shadcn-ui Card, Input, Button, and Table components. Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/hooks/usePayouts.ts",
-          "operation": "create",
-          "description": "Add React Query hooks for payouts: fetch payout history and submit payout requests; ensure cache invalidation and error handling for authorization failures."
-        },
-        {
-          "path": "frontend/src/components/MiningAppShell.tsx",
-          "operation": "modify",
-          "description": "Wire Payouts panel into the shell navigation and ensure it is only accessible when authenticated."
-        }
-      ]
-    },
-    {
-      "id": "REQ-13",
-      "summary": "Replace the Valentine visual system with a cohesive Bitcoin/mining-themed style across the app.",
-      "acceptanceCriteria": [
-        "The app uses a consistent mining/Bitcoin aesthetic across header, landing/dashboard, cards, and buttons.",
-        "Valentine-specific color palette and heart/romance styling are no longer visually dominant throughout the UI."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/index.css",
-          "operation": "modify",
-          "description": "Replace Valentine-themed OKLCH tokens with a mining/Bitcoin palette (e.g., dark neutrals, amber/orange accents) for both light and dark themes; keep Tailwind layering intact."
-        },
-        {
-          "path": "frontend/tailwind.config.js",
-          "operation": "modify",
-          "description": "Adjust theme extensions if needed to support the new mining/Bitcoin aesthetic (e.g., typography defaults or additional chart tokens) while continuing to rely on CSS variables for colors."
-        },
-        {
-          "path": "frontend/src/components/MiningHeader.tsx",
-          "operation": "modify",
-          "description": "Apply the new visual style consistently in the header (branding, nav states, button variants) using shadcn-ui components. Verify the component's usage instructions before implementing."
+          "description": "Strengthen react-query refresh behavior for mining actions: after startMining/stopMining succeed, invalidate and actively refetch miningState and miningEvents so the status indicator and events list update within one refresh cycle; ensure failures propagate cleanly to the UI (no swallowed errors)."
         },
         {
           "path": "frontend/src/components/MiningDashboard.tsx",
           "operation": "modify",
-          "description": "Apply mining-themed styling (cards, status indicator, metrics, events list) consistent with the updated tokens. Verify the component's usage instructions before implementing."
-        }
-      ]
-    },
-    {
-      "id": "REQ-14",
-      "summary": "Add new static Bitcoin mining image assets under frontend/public/assets/generated and update the UI to use them instead of Valentine images.",
-      "acceptanceCriteria": [
-        "New images exist in frontend/public/assets/generated and are referenced by the React UI via static paths.",
-        "No UI references valentine-hero-bg.dim_1920x1080.png or other Valentine-generated imagery for primary backgrounds/hero sections."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/public/assets/generated/mining-hero-bg.dim_1920x1080.png",
-          "operation": "create",
-          "description": "Add generated static hero background illustration (abstract circuitry + subtle Bitcoin motifs) as a frontend public asset."
-        },
-        {
-          "path": "frontend/public/assets/generated/mining-icons.dim_512x512.png",
-          "operation": "create",
-          "description": "Add generated flat icon sheet (Bitcoin symbol, pickaxe, chip, lightning bolt) as a frontend public asset."
-        },
-        {
-          "path": "frontend/public/assets/generated/mining-rig-illustration.dim_1600x900.png",
-          "operation": "create",
-          "description": "Add generated mining rig illustration (stylized ASIC rows on dark background) as a frontend public asset."
-        },
-        {
-          "path": "frontend/src/components/MiningDashboard.tsx",
-          "operation": "modify",
-          "description": "Reference the new hero/background/illustration assets via static public paths: frontend/public/assets/generated/mining-hero-bg.dim_1920x1080.png and frontend/public/assets/generated/mining-rig-illustration.dim_1600x900.png (do not reference Valentine assets)."
-        },
-        {
-          "path": "frontend/src/components/MiningHeader.tsx",
-          "operation": "modify",
-          "description": "Use the new icon sheet in the header branding or navigation affordances as needed via static public path: frontend/public/assets/generated/mining-icons.dim_512x512.png."
-        },
-        {
-          "path": "frontend/public/assets/generated/valentine-hero-bg.dim_1920x1080.png",
-          "operation": "delete",
-          "description": "Remove the old Valentine hero asset to prevent accidental reuse."
-        },
-        {
-          "path": "frontend/public/assets/generated/valentine-icons.dim_512x512.png",
-          "operation": "delete",
-          "description": "Remove the old Valentine icon asset to prevent accidental reuse."
-        },
-        {
-          "path": "frontend/public/assets/generated/valentine-celebration.dim_1600x900.png",
-          "operation": "delete",
-          "description": "Remove the old Valentine celebration asset to prevent accidental reuse."
+          "description": "After start/stop, rely on react-query invalidation/refetch to update the Recent Activity list without a full page refresh; on failure, show an English toast using the shared error-message utility and avoid any success messaging."
         }
       ]
     }

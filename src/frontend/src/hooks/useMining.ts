@@ -70,9 +70,12 @@ export function useStartMining() {
       if (!actor) throw new Error('Actor not available');
       return actor.startMining();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['miningState'] });
-      queryClient.invalidateQueries({ queryKey: ['miningEvents'] });
+    onSuccess: async () => {
+      // Invalidate and actively refetch to ensure UI updates immediately
+      await queryClient.invalidateQueries({ queryKey: ['miningState'] });
+      await queryClient.invalidateQueries({ queryKey: ['miningEvents'] });
+      await queryClient.refetchQueries({ queryKey: ['miningState'] });
+      await queryClient.refetchQueries({ queryKey: ['miningEvents'] });
     },
   });
 }
@@ -86,9 +89,12 @@ export function useStopMining() {
       if (!actor) throw new Error('Actor not available');
       return actor.stopMining();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['miningState'] });
-      queryClient.invalidateQueries({ queryKey: ['miningEvents'] });
+    onSuccess: async () => {
+      // Invalidate and actively refetch to ensure UI updates immediately
+      await queryClient.invalidateQueries({ queryKey: ['miningState'] });
+      await queryClient.invalidateQueries({ queryKey: ['miningEvents'] });
+      await queryClient.refetchQueries({ queryKey: ['miningState'] });
+      await queryClient.refetchQueries({ queryKey: ['miningEvents'] });
     },
   });
 }
