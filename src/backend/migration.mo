@@ -1,64 +1,114 @@
 import Map "mo:core/Map";
-import Nat "mo:core/Nat";
-import Principal "mo:core/Principal";
 import List "mo:core/List";
+import Principal "mo:core/Principal";
 import Time "mo:core/Time";
 
 module {
-  // Mining related types
-  type MiningConfig = {
-    profileName : Text;
-    targetHashrate : Nat;
-    powerUsage : Nat;
-    electricityCost : Nat;
-    bitcoinPayoutAddress : Text;
-  };
-
-  type MiningState = {
-    config : MiningConfig;
-    isActive : Bool;
-    lastStartTimestamp : ?Time.Time;
-    cumulativeRuntime : Nat;
-    cumulativeEarnings : Nat;
-  };
-
-  type MiningEvent = {
-    eventType : Text;
-    timestamp : Time.Time;
-    details : ?Text;
-  };
-
-  type Payout = {
-    amount : Nat;
-    address : Text;
-    status : Text;
-    timestamp : Time.Time;
-  };
-
-  // Old actor type (without mining fields)
+  // Old actor type
   type OldActor = {
     userProfiles : Map.Map<Principal, { name : Text }>;
-    responses : Map.Map<Principal, { accepted : Bool; note : ?Text }>;
-  };
+    responses : Map.Map<Principal, {
+      accepted : Bool;
+      note : ?Text;
+    }>;
 
-  // New actor type (with mining fields)
-  type NewActor = {
-    userProfiles : Map.Map<Principal, { name : Text }>;
-    responses : Map.Map<Principal, { accepted : Bool; note : ?Text }>;
-    miningConfigs : Map.Map<Principal, MiningConfig>;
-    miningStates : Map.Map<Principal, MiningState>;
-    miningEvents : Map.Map<Principal, List.List<MiningEvent>>;
-    payoutRequests : Map.Map<Principal, List.List<Payout>>;
-  };
+    miningConfigs : Map.Map<Principal, {
+      profileName : Text;
+      targetHashrate : Nat;
+      powerUsage : Nat;
+      electricityCost : Nat;
+      bitcoinPayoutAddress : Text;
+    }>;
 
-  // Migration function
-  public func run(old : OldActor) : NewActor {
-    {
-      old with
-      miningConfigs = Map.empty<Principal, MiningConfig>();
-      miningStates = Map.empty<Principal, MiningState>();
-      miningEvents = Map.empty<Principal, List.List<MiningEvent>>();
-      payoutRequests = Map.empty<Principal, List.List<Payout>>();
+    miningStates : Map.Map<Principal, {
+      config : {
+        profileName : Text;
+        targetHashrate : Nat;
+        powerUsage : Nat;
+        electricityCost : Nat;
+        bitcoinPayoutAddress : Text;
+      };
+      isActive : Bool;
+      lastStartTimestamp : ?Time.Time;
+      cumulativeRuntime : Nat;
+      cumulativeEarnings : Nat;
+    }>;
+
+    miningEvents : Map.Map<Principal, List.List<{
+      eventType : Text;
+      timestamp : Time.Time;
+      details : ?Text;
+    }>>;
+
+    payoutRequests : Map.Map<Principal, List.List<{
+      amount : Nat;
+      address : Text;
+      status : Text;
+      timestamp : Time.Time;
+    }>>;
+
+    userBalances : Map.Map<Principal, Map.Map<Text, {
+      asset : {
+        symbol : Text;
+        name : Text;
+        decimals : Nat;
+      };
+      available : Int;
+    }>>;
+
+    userDeposits : Map.Map<Principal, Map.Map<Text, {
+      id : Text;
+      txId : Text;
+      amount : Int;
+      asset : {
+        symbol : Text;
+        name : Text;
+        decimals : Nat;
+      };
+      status : Text;
+      timestamp : Time.Time;
+    }>>;
+
+    userWithdrawals : Map.Map<Principal, Map.Map<Text, {
+      id : Text;
+      amount : Int;
+      asset : {
+        symbol : Text;
+        name : Text;
+        decimals : Nat;
+      };
+      status : Text;
+      destinationAddress : Text;
+      timestamp : Time.Time;
+    }>>;
+
+    userTrades : Map.Map<Principal, Map.Map<Text, {
+      id : Text;
+      type_ : { #buy; #sell };
+      inputAsset : {
+        symbol : Text;
+        name : Text;
+        decimals : Nat;
+      };
+      inputAmount : Int;
+      outputAsset : {
+        symbol : Text;
+        name : Text;
+        decimals : Nat;
+      };
+      outputAmount : Int;
+      rate : Float;
+      status : Text;
+      timestamp : Time.Time;
+    }>>;
+
+    usdtDepositAddresses : {
+      trc20Address : Text;
+      erc20Address : Text;
     };
+  };
+
+  public func run(old : OldActor) : {} {
+    {};
   };
 };

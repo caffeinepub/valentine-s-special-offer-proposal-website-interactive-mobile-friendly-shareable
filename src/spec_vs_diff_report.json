@@ -1,53 +1,62 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-09T23:34:29.155Z",
-  "summary": "Frontend changes clearly add miningConfig-based gating for the dashboard start/stop flow and improve react-query refetch/invalidation for mining state/events plus actionable English error toasts. Backend changes for MiningState defaulting/startMining behavior cannot be verified from the truncated backend/main.mo diff, and the UI evidence for the events list itself updating (rendering) is truncated, so full REQ-15 and parts of REQ-17 cannot be confirmed implemented.",
+  "generatedAt": "2026-02-11T08:34:09.897Z",
+  "summary": "The diff implements most of the new Taskora Global reward-platform UI (Dashboard/Earn/VIP/Transfers/Admin) plus a new Tailwind theme, updated branding/meta, and React Query hooks. However, several key requirements are either not evidenced in the diff (notably the generated image assets), or appear to still rely on legacy/exchange backend state/methods rather than fully implementing the new backend data models and lifecycle semantics (e.g., transfer history/statuses and recent activity).",
   "missing_requirements": [
     {
-      "id": "REQ-15",
-      "requirement": "Backend must return a sensible default MiningState when a MiningConfig exists but MiningState is missing, and startMining must transition to Active without requiring an existing MiningState; cumulative counters must not reset unintentionally; already-active startMining must respond predictably.",
-      "reason": "The backend/main.mo diff content is truncated before the mining configuration/state implementation, so there is no visible evidence that getMiningState returns a default MiningState when missing, nor that startMining handles first-time start and preserves cumulative totals.",
+      "id": "REQ-47",
+      "requirement": "Dashboard shows a summary of today/this week earnings from ads/tasks (in addition to balance, VIP tier, recent activity).",
+      "reason": "The added DashboardPage shows Available Balance, VIP Status, and Total Earnings (all-time), but no visible today/this week earnings summary in the provided diff snippet.",
       "evidence": [
-        "backend/main.mo (truncated before Mining Configuration & State implementation)"
+        "frontend/src/components/taskora/pages/DashboardPage.tsx"
       ]
     },
     {
-      "id": "REQ-17",
-      "requirement": "Recent activity/events list must reflect start/stop immediately after Start/Stop actions, including first-time start after configuration, without full page refresh; backend rejections must be visible to user via English errors.",
-      "reason": "While react-query invalidation/refetch for miningEvents is implemented, the MiningDashboard rendering of the events list and any immediate UI update behavior is truncated, and backend event creation for start/stop is not visible in the truncated backend diff.",
+      "id": "REQ-52",
+      "requirement": "Backend canister adds persistent reward-platform models and methods (account summary, earning items/claims lifecycle, VIP requests lifecycle, USDT addresses, deposit/withdraw request + completion, transfer history) with consistent access control and clear Unauthorized traps.",
+      "reason": "backend/main.mo shows new types and some state maps, but the frontend hooks still call legacy exchange methods/state (e.g., getExchangeStateShared) for deposits/withdrawals and activity aggregation, indicating the new backend transfer/history surface may not be implemented or wired end-to-end in the diff. The diff snippet does not provide evidence of the full set of required backend methods and admin processing actions.",
       "evidence": [
-        "frontend/src/hooks/useMining.ts",
-        "frontend/src/components/MiningDashboard.tsx (truncated before events UI section)",
-        "backend/main.mo (truncated)"
+        "backend/main.mo",
+        "frontend/src/hooks/useRewardQueries.ts"
+      ]
+    },
+    {
+      "id": "REQ-56",
+      "requirement": "Generate and include new custom static image assets under frontend/public/assets/generated (logo, hero, background, icon set) and reference them from UI.",
+      "reason": "UI references generated asset paths (e.g., /assets/generated/taskora-logo.dim_512x512.png and taskora-hero...), but the diff summary does not show any added files under frontend/public/assets/generated.",
+      "evidence": [
+        "frontend/src/components/exchange/ExchangeHeader.tsx",
+        "frontend/src/components/taskora/pages/DashboardPage.tsx"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "Added a generic frontend error-message extraction utility (getErrorMessage) to parse backend trap messages and provide English fallbacks.",
-      "reason": "Not explicitly requested as a standalone feature, though it supports the requested behavior of showing actionable English errors.",
+      "description": "Added backend/migration.mo with an OldActor schema stub and a run() that returns an empty record (no migration logic).",
+      "reason": "The BuildRequest allows creating/updating backend/migration.mo only if an upgrade requires migrating existing stable state; the diff does not show an actual migration being performed (run returns {}). This appears unnecessary or incomplete relative to the stated migration policy.",
       "evidence": [
-        "frontend/src/utils/getErrorMessage.ts",
-        "frontend/src/components/MiningDashboard.tsx"
-      ]
-    },
-    {
-      "description": "Changed/added unauthenticated landing card and footer content in MiningAppShell (welcome text and sign-in call-to-action).",
-      "reason": "The BuildRequest focuses on fixing mining start flow and dashboard gating; this broader unauthenticated-shell content is not requested.",
-      "evidence": [
-        "frontend/src/components/MiningAppShell.tsx"
+        "backend/migration.mo"
       ]
     }
   ],
-  "confidence": 0.62,
+  "confidence": 0.64,
   "changed_files": [
     "backend/main.mo",
+    "backend/migration.mo",
     "frontend-file-summaries.txt",
-    "frontend/src/components/MiningAppShell.tsx",
-    "frontend/src/components/MiningDashboard.tsx",
-    "frontend/src/hooks/useMining.ts",
-    "frontend/src/utils/getErrorMessage.ts",
+    "frontend/index.html",
+    "frontend/src/components/ExchangeAppShell.tsx",
+    "frontend/src/components/exchange/ExchangeHeader.tsx",
+    "frontend/src/components/exchange/SimulationDisclosure.tsx",
+    "frontend/src/components/taskora/pages/AdminPanelPage.tsx",
+    "frontend/src/components/taskora/pages/DashboardPage.tsx",
+    "frontend/src/components/taskora/pages/EarnPage.tsx",
+    "frontend/src/components/taskora/pages/TransfersPage.tsx",
+    "frontend/src/components/taskora/pages/VipPage.tsx",
+    "frontend/src/hooks/useRewardQueries.ts",
+    "frontend/src/index.css",
+    "frontend/tailwind.config.js",
     "project_state.json"
   ]
 }

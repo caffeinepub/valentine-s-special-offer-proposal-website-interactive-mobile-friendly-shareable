@@ -2,12 +2,12 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-update-the-dashboard-start-stop-ux-so-the-start-mining-button-is-available-whenever-a-mining-configuration-exists-even-if-miningstate-is-currently-null-empty-do-not-block-the-dashboard-behind-configuration-required-based-solely-on-miningstate-config-instead-use-the-saved-mining-configuration-miningconfig-to-determine-whether-configuration-is-complete-and-allow-starting-mining-from-the-dashboard",
-      "featureTitle": "Update the dashboard start/stop UX so the Start Mining button is available whenever a mining configuration exists, even if miningState is currently null/empty. Do not block the dashboard behind \"Configuration Required\" based solely on miningState.config; instead, use the saved mining configuration (miningConfig) to determine whether configuration is complete, and allow starting mining from the dashboard.",
+      "featureId": "feature-replace-the-current-crypto-exchange-style-primary-app-flow-header-landing-and-main-content-with-a-taskora-global-reward-based-investment-earning-platform-experience-removing-exchange-specific-pages-and-copy-from-the-main-user-journey",
+      "featureTitle": "Replace the current crypto-exchange-style primary app flow (header, landing, and main content) with a Taskora Global reward-based investment/earning platform experience, removing exchange-specific pages and copy from the main user journey.",
       "files": [
-        "frontend/src/components/MiningAppShell.tsx",
-        "frontend/src/components/MiningDashboard.tsx",
-        "frontend/src/utils/getErrorMessage.ts"
+        "frontend/src/components/ExchangeAppShell.tsx",
+        "frontend/src/components/exchange/ExchangeHeader.tsx",
+        "frontend/src/components/taskora/pages/DashboardPage.tsx"
       ],
       "components": [
         "authorization@4.0.0",
@@ -19,16 +19,16 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-16"
+        "REQ-46"
       ],
       "confidence": "high"
     },
     {
-      "featureId": "feature-ensure-the-recent-activity-events-list-reflects-mining-start-stop-actions-immediately-after-the-user-clicks-start-mining-stop-mining-including-when-mining-is-started-for-the-first-time-after-configuration-any-backend-trap-permission-issues-should-be-visible-to-the-user-through-english-error-messages",
-      "featureTitle": "Ensure the recent activity/events list reflects mining start/stop actions immediately after the user clicks Start Mining/Stop Mining, including when mining is started for the first time after configuration. Any backend trap/permission issues should be visible to the user through English error messages.",
+      "featureId": "feature-implement-a-user-dashboard-page-for-the-reward-platform-that-shows-a-current-available-balance-b-vip-tier-status-c-a-summary-of-today-this-week-earnings-from-ads-tasks-and-d-recent-activity-earnings-deposits-withdrawals-with-clear-english-status-labels",
+      "featureTitle": "Implement a user Dashboard page for the reward platform that shows (a) current available balance, (b) VIP tier/status, (c) a summary of today/this week earnings from ads/tasks, and (d) recent activity (earnings, deposits, withdrawals) with clear English status labels.",
       "files": [
-        "frontend/src/components/MiningDashboard.tsx",
-        "frontend/src/hooks/useMining.ts"
+        "frontend/src/components/taskora/pages/DashboardPage.tsx",
+        "frontend/src/hooks/useRewardQueries.ts"
       ],
       "components": [
         "authorization@4.0.0",
@@ -40,7 +40,181 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-17"
+        "REQ-47"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-add-an-earn-page-that-lists-available-earning-opportunities-including-at-minimum-watch-ads-and-complete-tasks-and-allow-a-signed-in-user-to-submit-a-completion-claim-for-an-earning-item-that-becomes-visible-in-their-earnings-history-with-a-pending-approved-rejected-lifecycle",
+      "featureTitle": "Add an Earn page that lists available earning opportunities, including at minimum “Watch Ads” and “Complete Tasks”, and allow a signed-in user to submit a completion/claim for an earning item that becomes visible in their earnings history with a Pending/Approved/Rejected lifecycle.",
+      "files": [
+        "frontend/src/components/ExchangeAppShell.tsx",
+        "frontend/src/components/taskora/pages/EarnPage.tsx",
+        "frontend/src/hooks/useRewardQueries.ts"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "invite-links@3.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-48"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-implement-vip-tiers-create-a-vip-page-that-shows-tier-options-in-a-comparison-table-and-allows-a-signed-in-user-to-request-a-vip-upgrade-vip-upgrade-requests-must-be-pending-until-an-admin-approves-them",
+      "featureTitle": "Implement VIP tiers: create a VIP page that shows tier options in a comparison table and allows a signed-in user to request a VIP upgrade; VIP upgrade requests must be pending until an admin approves them.",
+      "files": [
+        "frontend/src/components/ExchangeAppShell.tsx",
+        "frontend/src/components/taskora/pages/VipPage.tsx",
+        "frontend/src/hooks/useRewardQueries.ts"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "invite-links@3.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-49"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-implement-manual-usdt-trc20-erc20-deposits-and-withdrawals-as-the-platform-s-wallet-transfers-module-users-can-view-admin-configured-usdt-deposit-addresses-for-both-networks-create-a-deposit-request-and-create-a-withdrawal-request-all-requests-remain-pending-until-an-admin-marks-them-completed",
+      "featureTitle": "Implement manual USDT (TRC20/ERC20) deposits and withdrawals as the platform’s wallet/transfers module: users can view admin-configured USDT deposit addresses for both networks, create a deposit request, and create a withdrawal request; all requests remain Pending until an admin marks them Completed.",
+      "files": [
+        "frontend/src/components/ExchangeAppShell.tsx",
+        "frontend/src/components/exchange/SimulationDisclosure.tsx",
+        "frontend/src/components/taskora/pages/TransfersPage.tsx",
+        "frontend/src/hooks/useRewardQueries.ts"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "invite-links@3.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-50"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-implement-an-admin-panel-that-is-accessible-only-to-admin-users-and-provides-controls-to-a-set-update-usdt-trc20-erc20-deposit-addresses-b-view-and-process-pending-deposit-requests-and-pending-withdrawal-requests-across-all-users-c-review-and-approve-reject-pending-earning-claims-and-d-review-and-approve-reject-pending-vip-upgrade-requests",
+      "featureTitle": "Implement an Admin Panel that is accessible only to admin users and provides controls to (a) set/update USDT TRC20/ERC20 deposit addresses, (b) view and process pending deposit requests and pending withdrawal requests across all users, (c) review and approve/reject pending earning claims, and (d) review and approve/reject pending VIP upgrade requests.",
+      "files": [
+        "frontend/src/components/ExchangeAppShell.tsx",
+        "frontend/src/components/taskora/pages/AdminPanelPage.tsx",
+        "frontend/src/hooks/useRewardQueries.ts"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "invite-links@3.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-51"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-add-frontend-react-query-hooks-queries-mutations-for-the-new-reward-platform-backend-methods-including-cache-invalidation-so-user-dashboards-and-histories-update-immediately-after-actions-claim-submission-admin-approvals-deposit-withdraw-completion-vip-approval",
+      "featureTitle": "Add frontend React Query hooks (queries + mutations) for the new reward-platform backend methods, including cache invalidation so user dashboards and histories update immediately after actions (claim submission, admin approvals, deposit/withdraw completion, VIP approval).",
+      "files": [
+        "frontend/src/components/taskora/pages/AdminPanelPage.tsx",
+        "frontend/src/components/taskora/pages/EarnPage.tsx",
+        "frontend/src/hooks/useRewardQueries.ts"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "invite-links@3.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-53"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-update-site-metadata-and-in-app-branding-to-match-taskora-global-as-a-reward-based-earning-platform-html-title-meta-description-header-brand-text",
+      "featureTitle": "Update site metadata and in-app branding to match “Taskora Global” as a reward-based earning platform (HTML title, meta description, header brand text).",
+      "files": [
+        "frontend/index.html",
+        "frontend/src/components/exchange/ExchangeHeader.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "invite-links@3.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-54"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-create-and-apply-a-cohesive-visual-theme-for-the-taskora-global-reward-platform-colors-typography-spacing-component-styling-that-feels-like-a-modern-international-rewards-fintech-saas-and-is-distinct-from-the-current-exchange-styling-ensure-strong-readability-and-contrast",
+      "featureTitle": "Create and apply a cohesive visual theme for the Taskora Global reward platform (colors, typography, spacing, component styling) that feels like a modern international rewards/fintech SaaS and is distinct from the current exchange styling; ensure strong readability and contrast.",
+      "files": [
+        "frontend/src/index.css",
+        "frontend/tailwind.config.js"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "invite-links@3.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-55"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-generate-and-include-new-custom-static-image-assets-for-the-taskora-global-reward-platform-and-render-them-from-the-frontend-as-static-files-under-frontend-public-assets-generated-do-not-serve-images-through-the-backend-update-the-ui-to-use-the-new-assets-instead-of-the-current-exchange-logo",
+      "featureTitle": "Generate and include new custom static image assets for the Taskora Global reward platform and render them from the frontend as static files under frontend/public/assets/generated (do not serve images through the backend); update the UI to use the new assets instead of the current exchange logo.",
+      "files": [
+        "frontend/src/components/exchange/ExchangeHeader.tsx",
+        "frontend/src/components/taskora/pages/DashboardPage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "invite-links@3.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-56"
       ],
       "confidence": "high"
     }

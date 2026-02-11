@@ -1,62 +1,204 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-09T23:34:29.158Z",
+  "generatedAt": "2026-02-11T08:34:09.902Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 3,
-    "implemented": 2,
+    "total": 11,
+    "implemented": 10,
     "items": [
       {
-        "id": "REQ-15",
-        "summary": "Fix the mining start preconditions and default state behavior so a user who has saved a mining configuration can start mining even when no MiningState record exists yet. Specifically: ensure the backend returns a sensible default MiningState when a MiningConfig exists but MiningState is missing, and ensure startMining transitions the state to Active without requiring an existing MiningState.",
+        "id": "REQ-46",
+        "summary": "Replace the current crypto-exchange-style primary app flow (header, landing, and main content) with a Taskora Global reward-based investment/earning platform experience, removing exchange-specific pages and copy from the main user journey.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/ExchangeAppShell.tsx",
+          "frontend/src/components/exchange/ExchangeHeader.tsx",
+          "frontend/src/components/taskora/pages/DashboardPage.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/ExchangeAppShell.tsx",
+          "frontend/src/components/exchange/ExchangeHeader.tsx",
+          "frontend/src/components/taskora/pages/DashboardPage.tsx"
+        ]
+      },
+      {
+        "id": "REQ-47",
+        "summary": "Implement a user Dashboard page for the reward platform that shows (a) current available balance, (b) VIP tier/status, (c) a summary of today/this week earnings from ads/tasks, and (d) recent activity (earnings, deposits, withdrawals) with clear English status labels.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/taskora/pages/DashboardPage.tsx",
+          "frontend/src/hooks/useRewardQueries.ts"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/taskora/pages/DashboardPage.tsx",
+          "frontend/src/hooks/useRewardQueries.ts"
+        ]
+      },
+      {
+        "id": "REQ-48",
+        "summary": "Add an Earn page that lists available earning opportunities, including at minimum “Watch Ads” and “Complete Tasks”, and allow a signed-in user to submit a completion/claim for an earning item that becomes visible in their earnings history with a Pending/Approved/Rejected lifecycle.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/taskora/pages/EarnPage.tsx",
+          "frontend/src/hooks/useRewardQueries.ts",
+          "frontend/src/components/ExchangeAppShell.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/taskora/pages/EarnPage.tsx",
+          "frontend/src/hooks/useRewardQueries.ts",
+          "frontend/src/components/ExchangeAppShell.tsx"
+        ]
+      },
+      {
+        "id": "REQ-49",
+        "summary": "Implement VIP tiers: create a VIP page that shows tier options in a comparison table and allows a signed-in user to request a VIP upgrade; VIP upgrade requests must be pending until an admin approves them.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/taskora/pages/VipPage.tsx",
+          "frontend/src/hooks/useRewardQueries.ts",
+          "frontend/src/components/ExchangeAppShell.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/taskora/pages/VipPage.tsx",
+          "frontend/src/hooks/useRewardQueries.ts",
+          "frontend/src/components/ExchangeAppShell.tsx"
+        ]
+      },
+      {
+        "id": "REQ-50",
+        "summary": "Implement manual USDT (TRC20/ERC20) deposits and withdrawals as the platform’s wallet/transfers module: users can view admin-configured USDT deposit addresses for both networks, create a deposit request, and create a withdrawal request; all requests remain Pending until an admin marks them Completed.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/taskora/pages/TransfersPage.tsx",
+          "frontend/src/components/exchange/SimulationDisclosure.tsx",
+          "frontend/src/hooks/useRewardQueries.ts",
+          "frontend/src/components/ExchangeAppShell.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/taskora/pages/TransfersPage.tsx",
+          "frontend/src/components/exchange/SimulationDisclosure.tsx",
+          "frontend/src/hooks/useRewardQueries.ts",
+          "frontend/src/components/ExchangeAppShell.tsx"
+        ]
+      },
+      {
+        "id": "REQ-51",
+        "summary": "Implement an Admin Panel that is accessible only to admin users and provides controls to (a) set/update USDT TRC20/ERC20 deposit addresses, (b) view and process pending deposit requests and pending withdrawal requests across all users, (c) review and approve/reject pending earning claims, and (d) review and approve/reject pending VIP upgrade requests.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/taskora/pages/AdminPanelPage.tsx",
+          "frontend/src/components/ExchangeAppShell.tsx",
+          "frontend/src/hooks/useRewardQueries.ts"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/taskora/pages/AdminPanelPage.tsx",
+          "frontend/src/components/ExchangeAppShell.tsx",
+          "frontend/src/hooks/useRewardQueries.ts"
+        ]
+      },
+      {
+        "id": "REQ-52",
+        "summary": "Update the backend canister to add persistent data models and methods for the reward platform: user account state (balance + VIP tier), earning item definitions, earning claim submission + review (pending/approved/rejected), VIP upgrade requests + review, and admin-only processing actions; enforce access control consistently using existing authorization patterns.",
         "status": "unknown",
         "plannedFiles": [],
         "matchedFiles": []
       },
       {
-        "id": "REQ-16",
-        "summary": "Update the dashboard start/stop UX so the Start Mining button is available whenever a mining configuration exists, even if miningState is currently null/empty. Do not block the dashboard behind \"Configuration Required\" based solely on miningState.config; instead, use the saved mining configuration (miningConfig) to determine whether configuration is complete, and allow starting mining from the dashboard.",
+        "id": "REQ-53",
+        "summary": "Add frontend React Query hooks (queries + mutations) for the new reward-platform backend methods, including cache invalidation so user dashboards and histories update immediately after actions (claim submission, admin approvals, deposit/withdraw completion, VIP approval).",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/components/MiningDashboard.tsx",
-          "frontend/src/components/MiningAppShell.tsx",
-          "frontend/src/utils/getErrorMessage.ts"
+          "frontend/src/hooks/useRewardQueries.ts",
+          "frontend/src/components/taskora/pages/EarnPage.tsx",
+          "frontend/src/components/taskora/pages/AdminPanelPage.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/components/MiningDashboard.tsx",
-          "frontend/src/components/MiningAppShell.tsx",
-          "frontend/src/utils/getErrorMessage.ts"
+          "frontend/src/hooks/useRewardQueries.ts",
+          "frontend/src/components/taskora/pages/EarnPage.tsx",
+          "frontend/src/components/taskora/pages/AdminPanelPage.tsx"
         ]
       },
       {
-        "id": "REQ-17",
-        "summary": "Ensure the recent activity/events list reflects mining start/stop actions immediately after the user clicks Start Mining/Stop Mining, including when mining is started for the first time after configuration. Any backend trap/permission issues should be visible to the user through English error messages.",
+        "id": "REQ-54",
+        "summary": "Update site metadata and in-app branding to match “Taskora Global” as a reward-based earning platform (HTML title, meta description, header brand text).",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/hooks/useMining.ts",
-          "frontend/src/components/MiningDashboard.tsx"
+          "frontend/index.html",
+          "frontend/src/components/exchange/ExchangeHeader.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/hooks/useMining.ts",
-          "frontend/src/components/MiningDashboard.tsx"
+          "frontend/index.html",
+          "frontend/src/components/exchange/ExchangeHeader.tsx"
+        ]
+      },
+      {
+        "id": "REQ-55",
+        "summary": "Create and apply a cohesive visual theme for the Taskora Global reward platform (colors, typography, spacing, component styling) that feels like a modern international rewards/fintech SaaS and is distinct from the current exchange styling; ensure strong readability and contrast.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/index.css",
+          "frontend/tailwind.config.js",
+          "frontend/src/components/taskora/layouts/TaskoraLayout.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/index.css",
+          "frontend/tailwind.config.js"
+        ]
+      },
+      {
+        "id": "REQ-56",
+        "summary": "Generate and include new custom static image assets for the Taskora Global reward platform and render them from the frontend as static files under frontend/public/assets/generated (do not serve images through the backend); update the UI to use the new assets instead of the current exchange logo.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/public/assets/generated/taskora-logo.dim_512x512.png",
+          "frontend/public/assets/generated/taskora-hero.dim_1400x800.png",
+          "frontend/public/assets/generated/taskora-bg.dim_1600x900.png",
+          "frontend/public/assets/generated/taskora-icons.dim_128x128.png",
+          "frontend/src/components/exchange/ExchangeHeader.tsx",
+          "frontend/src/components/taskora/pages/DashboardPage.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/public/assets/generated/taskora-logo.dim_512x512.png",
+          "frontend/public/assets/generated/taskora-hero.dim_1400x800.png",
+          "frontend/public/assets/generated/taskora-bg.dim_1600x900.png",
+          "frontend/public/assets/generated/taskora-icons.dim_128x128.png",
+          "frontend/src/components/exchange/ExchangeHeader.tsx",
+          "frontend/src/components/taskora/pages/DashboardPage.tsx"
         ]
       }
     ]
   },
   "changedFiles": [
     "backend/main.mo",
+    "backend/migration.mo",
     "build-request.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/components/MiningAppShell.tsx",
-    "frontend/src/components/MiningDashboard.tsx",
-    "frontend/src/hooks/useMining.ts",
-    "frontend/src/utils/getErrorMessage.ts",
+    "frontend/index.html",
+    "frontend/public/assets/generated/taskora-bg.dim_1600x900.png",
+    "frontend/public/assets/generated/taskora-hero.dim_1400x800.png",
+    "frontend/public/assets/generated/taskora-icons.dim_128x128.png",
+    "frontend/public/assets/generated/taskora-logo.dim_512x512.png",
+    "frontend/src/backend.d.ts",
+    "frontend/src/backend.ts",
+    "frontend/src/components/ExchangeAppShell.tsx",
+    "frontend/src/components/exchange/ExchangeHeader.tsx",
+    "frontend/src/components/exchange/SimulationDisclosure.tsx",
+    "frontend/src/components/taskora/pages/AdminPanelPage.tsx",
+    "frontend/src/components/taskora/pages/DashboardPage.tsx",
+    "frontend/src/components/taskora/pages/EarnPage.tsx",
+    "frontend/src/components/taskora/pages/TransfersPage.tsx",
+    "frontend/src/components/taskora/pages/VipPage.tsx",
+    "frontend/src/declarations/backend.did.d.ts",
+    "frontend/src/declarations/backend.did.js",
+    "frontend/src/hooks/useRewardQueries.ts",
+    "frontend/src/index.css",
+    "frontend/tailwind.config.js",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

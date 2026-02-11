@@ -6,7 +6,7 @@
     :root {
         --radius: 0.5rem;
         
-        /* Bitcoin Mining Color Palette - Light Mode */
+        /* Taskora Global Color Palette - Light Mode */
         --background: 0.98 0.01 240;
         --foreground: 0.15 0.02 240;
         
@@ -16,66 +16,66 @@
         --popover: 1 0.00 240;
         --popover-foreground: 0.15 0.02 240;
         
-        --primary: 0.55 0.18 45;
-        --primary-foreground: 0.98 0.01 45;
+        --primary: 0.50 0.22 280;
+        --primary-foreground: 0.98 0.01 280;
         
         --secondary: 0.92 0.02 240;
-        --secondary-foreground: 0.25 0.03 240;
+        --secondary-foreground: 0.20 0.03 240;
         
         --muted: 0.94 0.01 240;
         --muted-foreground: 0.50 0.01 240;
         
-        --accent: 0.65 0.20 35;
-        --accent-foreground: 0.98 0.01 35;
+        --accent: 0.60 0.24 160;
+        --accent-foreground: 0.98 0.01 160;
         
         --destructive: 0.55 0.22 25;
         --destructive-foreground: 0.98 0.01 25;
         
         --border: 0.88 0.01 240;
         --input: 0.88 0.01 240;
-        --ring: 0.55 0.18 45;
+        --ring: 0.50 0.22 280;
         
-        --chart-1: 0.55 0.18 45;
-        --chart-2: 0.65 0.20 35;
-        --chart-3: 0.45 0.15 55;
-        --chart-4: 0.75 0.12 25;
-        --chart-5: 0.35 0.10 240;
+        --chart-1: 0.50 0.22 280;
+        --chart-2: 0.60 0.24 160;
+        --chart-3: 0.65 0.20 200;
+        --chart-4: 0.55 0.20 320;
+        --chart-5: 0.60 0.18 140;
     }
 
     .dark {
-        --background: 0.12 0.02 240;
+        --background: 0.08 0.02 240;
         --foreground: 0.95 0.01 240;
         
-        --card: 0.16 0.02 240;
+        --card: 0.12 0.02 240;
         --card-foreground: 0.95 0.01 240;
         
-        --popover: 0.14 0.02 240;
+        --popover: 0.10 0.02 240;
         --popover-foreground: 0.95 0.01 240;
         
-        --primary: 0.65 0.20 45;
-        --primary-foreground: 0.12 0.02 45;
+        --primary: 0.65 0.24 280;
+        --primary-foreground: 0.08 0.02 280;
         
-        --secondary: 0.22 0.03 240;
+        --secondary: 0.18 0.03 240;
         --secondary-foreground: 0.95 0.01 240;
         
-        --muted: 0.20 0.02 240;
+        --muted: 0.16 0.02 240;
         --muted-foreground: 0.60 0.01 240;
         
-        --accent: 0.55 0.18 35;
-        --accent-foreground: 0.95 0.01 35;
+        --accent: 0.65 0.26 160;
+        --accent-foreground: 0.95 0.01 160;
         
         --destructive: 0.60 0.22 25;
-        --destructive-foreground: 0.12 0.02 25;
+        --destructive-foreground: 0.08 0.02 25;
         
-        --border: 0.26 0.02 240;
-        --input: 0.26 0.02 240;
-        --ring: 0.65 0.20 45;
+        --border: 0.22 0.02 240;
+        --input: 0.22 0.02 240;
+        --ring: 0.65 0.24 280;
         
-        --chart-1: 0.65 0.20 45;
-        --chart-2: 0.55 0.18 35;
-        --chart-3: 0.75 0.15 55;
-        --chart-4: 0.45 0.12 25;
-        --chart-5: 0.85 0.08 65;
+        --chart-1: 0.65 0.24 280;
+        --chart-2: 0.65 0.26 160;
+        --chart-3: 0.70 0.22 200;
+        --chart-4: 0.60 0.22 320;
+        --chart-5: 0.65 0.20 140;
     }
 
     * {

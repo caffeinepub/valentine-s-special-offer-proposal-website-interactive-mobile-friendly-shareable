@@ -14,6 +14,81 @@ export const UserRole = IDL.Variant({
   'guest' : IDL.Null,
 });
 export const Time = IDL.Int;
+export const EarningItem = IDL.Record({
+  'id' : IDL.Text,
+  'status' : IDL.Variant({ 'active' : IDL.Null, 'disabled' : IDL.Null }),
+  'created' : Time,
+  'rewardAmount' : IDL.Nat,
+  'externalId' : IDL.Opt(IDL.Text),
+  'name' : IDL.Text,
+  'description' : IDL.Text,
+  'conditionText' : IDL.Text,
+  'updated' : Time,
+});
+export const SupportedAsset = IDL.Record({
+  'decimals' : IDL.Nat,
+  'name' : IDL.Text,
+  'symbol' : IDL.Text,
+});
+export const Deposit = IDL.Record({
+  'id' : IDL.Text,
+  'status' : IDL.Text,
+  'asset' : SupportedAsset,
+  'txId' : IDL.Text,
+  'timestamp' : Time,
+  'amount' : IDL.Int,
+});
+export const EarningClaim = IDL.Record({
+  'id' : IDL.Text,
+  'status' : IDL.Variant({
+    'pending' : IDL.Null,
+    'approved' : IDL.Null,
+    'rejected' : IDL.Null,
+  }),
+  'itemId' : IDL.Text,
+  'created' : Time,
+  'rewardAmount' : IDL.Nat,
+  'userId' : IDL.Principal,
+  'userMessage' : IDL.Opt(IDL.Text),
+  'claimData' : IDL.Record({ 'intent' : IDL.Text, 'proof' : IDL.Text }),
+  'updated' : Time,
+  'adminMessage' : IDL.Opt(IDL.Text),
+});
+export const VIPStatus = IDL.Record({
+  'requestedUpgrade' : IDL.Opt(
+    IDL.Record({
+      'status' : IDL.Variant({
+        'pending' : IDL.Null,
+        'approved' : IDL.Null,
+        'rejected' : IDL.Null,
+      }),
+      'tierTo' : IDL.Variant({
+        'bronze' : IDL.Null,
+        'gold' : IDL.Null,
+        'diamond' : IDL.Null,
+        'basic' : IDL.Null,
+        'silver' : IDL.Null,
+      }),
+      'adminMessage' : IDL.Opt(IDL.Text),
+      'requestedAt' : Time,
+    })
+  ),
+  'tier' : IDL.Variant({
+    'bronze' : IDL.Null,
+    'gold' : IDL.Null,
+    'diamond' : IDL.Null,
+    'basic' : IDL.Null,
+    'silver' : IDL.Null,
+  }),
+});
+export const Withdrawal = IDL.Record({
+  'id' : IDL.Text,
+  'status' : IDL.Text,
+  'asset' : SupportedAsset,
+  'destinationAddress' : IDL.Text,
+  'timestamp' : Time,
+  'amount' : IDL.Int,
+});
 export const RSVP = IDL.Record({
   'name' : IDL.Text,
   'inviteCode' : IDL.Text,
@@ -25,6 +100,29 @@ export const ProposalResponse = IDL.Record({
   'accepted' : IDL.Bool,
 });
 export const UserProfile = IDL.Record({ 'name' : IDL.Text });
+export const Trade = IDL.Record({
+  'id' : IDL.Text,
+  'status' : IDL.Text,
+  'rate' : IDL.Float64,
+  'type' : IDL.Variant({ 'buy' : IDL.Null, 'sell' : IDL.Null }),
+  'outputAsset' : SupportedAsset,
+  'inputAsset' : SupportedAsset,
+  'timestamp' : Time,
+  'inputAmount' : IDL.Int,
+  'outputAmount' : IDL.Int,
+});
+export const Balance = IDL.Record({
+  'asset' : SupportedAsset,
+  'available' : IDL.Int,
+});
+export const ExchangeState = IDL.Record({
+  'trades' : IDL.Vec(IDL.Tuple(IDL.Text, Trade)),
+  'exchangeRates' : IDL.Vec(IDL.Tuple(IDL.Text, IDL.Float64)),
+  'withdrawals' : IDL.Vec(IDL.Tuple(IDL.Text, Withdrawal)),
+  'supportedAssets' : IDL.Vec(SupportedAsset),
+  'deposits' : IDL.Vec(IDL.Tuple(IDL.Text, Deposit)),
+  'balances' : IDL.Vec(IDL.Tuple(IDL.Text, Balance)),
+});
 export const InviteCode = IDL.Record({
   'created' : Time,
   'code' : IDL.Text,
@@ -55,15 +153,56 @@ export const Payout = IDL.Record({
   'timestamp' : Time,
   'amount' : IDL.Nat,
 });
+export const DepositAddresses = IDL.Record({
+  'erc20Address' : IDL.Text,
+  'trc20Address' : IDL.Text,
+});
 
 export const idlService = IDL.Service({
   '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
+  'approveEarningClaim' : IDL.Func([IDL.Text, IDL.Opt(IDL.Text)], [], []),
+  'approveVIPUpgrade' : IDL.Func([IDL.Principal, IDL.Opt(IDL.Text)], [], []),
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
+  'completePayout' : IDL.Func([IDL.Principal, IDL.Nat], [], []),
+  'createEarningItem' : IDL.Func(
+      [IDL.Text, IDL.Text, IDL.Nat, IDL.Text, IDL.Opt(IDL.Text)],
+      [EarningItem],
+      [],
+    ),
   'generateInviteCode' : IDL.Func([], [IDL.Text], []),
+  'getAllEarningItems' : IDL.Func(
+      [],
+      [IDL.Vec(IDL.Tuple(IDL.Text, EarningItem))],
+      ['query'],
+    ),
+  'getAllPendingDeposits' : IDL.Func(
+      [],
+      [IDL.Vec(IDL.Tuple(IDL.Principal, Deposit))],
+      ['query'],
+    ),
+  'getAllPendingEarningClaims' : IDL.Func(
+      [],
+      [IDL.Vec(EarningClaim)],
+      ['query'],
+    ),
+  'getAllPendingVIPUpgrades' : IDL.Func(
+      [],
+      [IDL.Vec(IDL.Tuple(IDL.Principal, VIPStatus))],
+      ['query'],
+    ),
+  'getAllPendingWithdrawals' : IDL.Func(
+      [],
+      [IDL.Vec(IDL.Tuple(IDL.Principal, Withdrawal))],
+      ['query'],
+    ),
   'getAllRSVPs' : IDL.Func([], [IDL.Vec(RSVP)], ['query']),
+  'getCallerEarningClaims' : IDL.Func([], [IDL.Vec(EarningClaim)], ['query']),
   'getCallerResponse' : IDL.Func([], [IDL.Opt(ProposalResponse)], ['query']),
   'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
   'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
+  'getCallerVIPStatus' : IDL.Func([], [VIPStatus], ['query']),
+  'getEarningItem' : IDL.Func([IDL.Text], [IDL.Opt(EarningItem)], ['query']),
+  'getExchangeStateShared' : IDL.Func([], [ExchangeState], ['query']),
   'getInviteCodes' : IDL.Func([], [IDL.Vec(InviteCode)], ['query']),
   'getMiningConfig' : IDL.Func([], [IDL.Opt(MiningConfig)], ['query']),
   'getMiningEvents' : IDL.Func([], [IDL.Vec(MiningEvent)], ['query']),
@@ -74,18 +213,77 @@ export const idlService = IDL.Service({
       [IDL.Opt(ProposalResponse)],
       ['query'],
     ),
+  'getSupportedAssets' : IDL.Func([], [IDL.Vec(SupportedAsset)], ['query']),
+  'getTotalRewardedAmount' : IDL.Func([], [IDL.Nat], ['query']),
+  'getUsdtDepositAddresses' : IDL.Func([], [DepositAddresses], ['query']),
   'getUserProfile' : IDL.Func(
       [IDL.Principal],
       [IDL.Opt(UserProfile)],
       ['query'],
     ),
+  'getcallerEarningClaimsCount' : IDL.Func([], [IDL.Nat], ['query']),
   'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
+  'markDepositCompleted' : IDL.Func(
+      [IDL.Principal, IDL.Text, IDL.Text],
+      [],
+      [],
+    ),
+  'markWithdrawalCompleted' : IDL.Func([IDL.Principal, IDL.Text], [], []),
+  'rejectEarningClaim' : IDL.Func([IDL.Text, IDL.Opt(IDL.Text)], [], []),
+  'rejectVIPUpgrade' : IDL.Func([IDL.Principal, IDL.Opt(IDL.Text)], [], []),
+  'requestDeposit' : IDL.Func([IDL.Text, IDL.Int], [Deposit], []),
   'requestPayout' : IDL.Func([IDL.Nat], [], []),
+  'requestVIPUpgrade' : IDL.Func(
+      [
+        IDL.Variant({
+          'bronze' : IDL.Null,
+          'gold' : IDL.Null,
+          'diamond' : IDL.Null,
+          'basic' : IDL.Null,
+          'silver' : IDL.Null,
+        }),
+      ],
+      [],
+      [],
+    ),
+  'requestWithdrawal' : IDL.Func(
+      [IDL.Text, IDL.Int, IDL.Text],
+      [Withdrawal],
+      [],
+    ),
   'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
+  'setUsdtDepositAddresses' : IDL.Func([DepositAddresses], [], []),
   'startMining' : IDL.Func([], [], []),
   'stopMining' : IDL.Func([], [], []),
+  'submitEarningClaim' : IDL.Func(
+      [IDL.Text, IDL.Text, IDL.Text, IDL.Opt(IDL.Text)],
+      [EarningClaim],
+      [],
+    ),
   'submitRSVP' : IDL.Func([IDL.Text, IDL.Bool, IDL.Text], [], []),
   'submitResponse' : IDL.Func([IDL.Bool, IDL.Opt(IDL.Text)], [], []),
+  'trade' : IDL.Func(
+      [
+        IDL.Variant({ 'buy' : IDL.Null, 'sell' : IDL.Null }),
+        IDL.Text,
+        IDL.Text,
+        IDL.Int,
+      ],
+      [Trade],
+      [],
+    ),
+  'updateEarningItem' : IDL.Func(
+      [
+        IDL.Text,
+        IDL.Text,
+        IDL.Text,
+        IDL.Nat,
+        IDL.Text,
+        IDL.Variant({ 'active' : IDL.Null, 'disabled' : IDL.Null }),
+      ],
+      [EarningItem],
+      [],
+    ),
   'updateMiningConfig' : IDL.Func([MiningConfig], [], []),
 });
 
@@ -98,6 +296,81 @@ export const idlFactory = ({ IDL }) => {
     'guest' : IDL.Null,
   });
   const Time = IDL.Int;
+  const EarningItem = IDL.Record({
+    'id' : IDL.Text,
+    'status' : IDL.Variant({ 'active' : IDL.Null, 'disabled' : IDL.Null }),
+    'created' : Time,
+    'rewardAmount' : IDL.Nat,
+    'externalId' : IDL.Opt(IDL.Text),
+    'name' : IDL.Text,
+    'description' : IDL.Text,
+    'conditionText' : IDL.Text,
+    'updated' : Time,
+  });
+  const SupportedAsset = IDL.Record({
+    'decimals' : IDL.Nat,
+    'name' : IDL.Text,
+    'symbol' : IDL.Text,
+  });
+  const Deposit = IDL.Record({
+    'id' : IDL.Text,
+    'status' : IDL.Text,
+    'asset' : SupportedAsset,
+    'txId' : IDL.Text,
+    'timestamp' : Time,
+    'amount' : IDL.Int,
+  });
+  const EarningClaim = IDL.Record({
+    'id' : IDL.Text,
+    'status' : IDL.Variant({
+      'pending' : IDL.Null,
+      'approved' : IDL.Null,
+      'rejected' : IDL.Null,
+    }),
+    'itemId' : IDL.Text,
+    'created' : Time,
+    'rewardAmount' : IDL.Nat,
+    'userId' : IDL.Principal,
+    'userMessage' : IDL.Opt(IDL.Text),
+    'claimData' : IDL.Record({ 'intent' : IDL.Text, 'proof' : IDL.Text }),
+    'updated' : Time,
+    'adminMessage' : IDL.Opt(IDL.Text),
+  });
+  const VIPStatus = IDL.Record({
+    'requestedUpgrade' : IDL.Opt(
+      IDL.Record({
+        'status' : IDL.Variant({
+          'pending' : IDL.Null,
+          'approved' : IDL.Null,
+          'rejected' : IDL.Null,
+        }),
+        'tierTo' : IDL.Variant({
+          'bronze' : IDL.Null,
+          'gold' : IDL.Null,
+          'diamond' : IDL.Null,
+          'basic' : IDL.Null,
+          'silver' : IDL.Null,
+        }),
+        'adminMessage' : IDL.Opt(IDL.Text),
+        'requestedAt' : Time,
+      })
+    ),
+    'tier' : IDL.Variant({
+      'bronze' : IDL.Null,
+      'gold' : IDL.Null,
+      'diamond' : IDL.Null,
+      'basic' : IDL.Null,
+      'silver' : IDL.Null,
+    }),
+  });
+  const Withdrawal = IDL.Record({
+    'id' : IDL.Text,
+    'status' : IDL.Text,
+    'asset' : SupportedAsset,
+    'destinationAddress' : IDL.Text,
+    'timestamp' : Time,
+    'amount' : IDL.Int,
+  });
   const RSVP = IDL.Record({
     'name' : IDL.Text,
     'inviteCode' : IDL.Text,
@@ -109,6 +382,29 @@ export const idlFactory = ({ IDL }) => {
     'accepted' : IDL.Bool,
   });
   const UserProfile = IDL.Record({ 'name' : IDL.Text });
+  const Trade = IDL.Record({
+    'id' : IDL.Text,
+    'status' : IDL.Text,
+    'rate' : IDL.Float64,
+    'type' : IDL.Variant({ 'buy' : IDL.Null, 'sell' : IDL.Null }),
+    'outputAsset' : SupportedAsset,
+    'inputAsset' : SupportedAsset,
+    'timestamp' : Time,
+    'inputAmount' : IDL.Int,
+    'outputAmount' : IDL.Int,
+  });
+  const Balance = IDL.Record({
+    'asset' : SupportedAsset,
+    'available' : IDL.Int,
+  });
+  const ExchangeState = IDL.Record({
+    'trades' : IDL.Vec(IDL.Tuple(IDL.Text, Trade)),
+    'exchangeRates' : IDL.Vec(IDL.Tuple(IDL.Text, IDL.Float64)),
+    'withdrawals' : IDL.Vec(IDL.Tuple(IDL.Text, Withdrawal)),
+    'supportedAssets' : IDL.Vec(SupportedAsset),
+    'deposits' : IDL.Vec(IDL.Tuple(IDL.Text, Deposit)),
+    'balances' : IDL.Vec(IDL.Tuple(IDL.Text, Balance)),
+  });
   const InviteCode = IDL.Record({
     'created' : Time,
     'code' : IDL.Text,
@@ -139,15 +435,56 @@ export const idlFactory = ({ IDL }) => {
     'timestamp' : Time,
     'amount' : IDL.Nat,
   });
+  const DepositAddresses = IDL.Record({
+    'erc20Address' : IDL.Text,
+    'trc20Address' : IDL.Text,
+  });
   
   return IDL.Service({
     '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
+    'approveEarningClaim' : IDL.Func([IDL.Text, IDL.Opt(IDL.Text)], [], []),
+    'approveVIPUpgrade' : IDL.Func([IDL.Principal, IDL.Opt(IDL.Text)], [], []),
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
+    'completePayout' : IDL.Func([IDL.Principal, IDL.Nat], [], []),
+    'createEarningItem' : IDL.Func(
+        [IDL.Text, IDL.Text, IDL.Nat, IDL.Text, IDL.Opt(IDL.Text)],
+        [EarningItem],
+        [],
+      ),
     'generateInviteCode' : IDL.Func([], [IDL.Text], []),
+    'getAllEarningItems' : IDL.Func(
+        [],
+        [IDL.Vec(IDL.Tuple(IDL.Text, EarningItem))],
+        ['query'],
+      ),
+    'getAllPendingDeposits' : IDL.Func(
+        [],
+        [IDL.Vec(IDL.Tuple(IDL.Principal, Deposit))],
+        ['query'],
+      ),
+    'getAllPendingEarningClaims' : IDL.Func(
+        [],
+        [IDL.Vec(EarningClaim)],
+        ['query'],
+      ),
+    'getAllPendingVIPUpgrades' : IDL.Func(
+        [],
+        [IDL.Vec(IDL.Tuple(IDL.Principal, VIPStatus))],
+        ['query'],
+      ),
+    'getAllPendingWithdrawals' : IDL.Func(
+        [],
+        [IDL.Vec(IDL.Tuple(IDL.Principal, Withdrawal))],
+        ['query'],
+      ),
     'getAllRSVPs' : IDL.Func([], [IDL.Vec(RSVP)], ['query']),
+    'getCallerEarningClaims' : IDL.Func([], [IDL.Vec(EarningClaim)], ['query']),
     'getCallerResponse' : IDL.Func([], [IDL.Opt(ProposalResponse)], ['query']),
     'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
     'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
+    'getCallerVIPStatus' : IDL.Func([], [VIPStatus], ['query']),
+    'getEarningItem' : IDL.Func([IDL.Text], [IDL.Opt(EarningItem)], ['query']),
+    'getExchangeStateShared' : IDL.Func([], [ExchangeState], ['query']),
     'getInviteCodes' : IDL.Func([], [IDL.Vec(InviteCode)], ['query']),
     'getMiningConfig' : IDL.Func([], [IDL.Opt(MiningConfig)], ['query']),
     'getMiningEvents' : IDL.Func([], [IDL.Vec(MiningEvent)], ['query']),
@@ -158,18 +495,77 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Opt(ProposalResponse)],
         ['query'],
       ),
+    'getSupportedAssets' : IDL.Func([], [IDL.Vec(SupportedAsset)], ['query']),
+    'getTotalRewardedAmount' : IDL.Func([], [IDL.Nat], ['query']),
+    'getUsdtDepositAddresses' : IDL.Func([], [DepositAddresses], ['query']),
     'getUserProfile' : IDL.Func(
         [IDL.Principal],
         [IDL.Opt(UserProfile)],
         ['query'],
       ),
+    'getcallerEarningClaimsCount' : IDL.Func([], [IDL.Nat], ['query']),
     'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
+    'markDepositCompleted' : IDL.Func(
+        [IDL.Principal, IDL.Text, IDL.Text],
+        [],
+        [],
+      ),
+    'markWithdrawalCompleted' : IDL.Func([IDL.Principal, IDL.Text], [], []),
+    'rejectEarningClaim' : IDL.Func([IDL.Text, IDL.Opt(IDL.Text)], [], []),
+    'rejectVIPUpgrade' : IDL.Func([IDL.Principal, IDL.Opt(IDL.Text)], [], []),
+    'requestDeposit' : IDL.Func([IDL.Text, IDL.Int], [Deposit], []),
     'requestPayout' : IDL.Func([IDL.Nat], [], []),
+    'requestVIPUpgrade' : IDL.Func(
+        [
+          IDL.Variant({
+            'bronze' : IDL.Null,
+            'gold' : IDL.Null,
+            'diamond' : IDL.Null,
+            'basic' : IDL.Null,
+            'silver' : IDL.Null,
+          }),
+        ],
+        [],
+        [],
+      ),
+    'requestWithdrawal' : IDL.Func(
+        [IDL.Text, IDL.Int, IDL.Text],
+        [Withdrawal],
+        [],
+      ),
     'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
+    'setUsdtDepositAddresses' : IDL.Func([DepositAddresses], [], []),
     'startMining' : IDL.Func([], [], []),
     'stopMining' : IDL.Func([], [], []),
+    'submitEarningClaim' : IDL.Func(
+        [IDL.Text, IDL.Text, IDL.Text, IDL.Opt(IDL.Text)],
+        [EarningClaim],
+        [],
+      ),
     'submitRSVP' : IDL.Func([IDL.Text, IDL.Bool, IDL.Text], [], []),
     'submitResponse' : IDL.Func([IDL.Bool, IDL.Opt(IDL.Text)], [], []),
+    'trade' : IDL.Func(
+        [
+          IDL.Variant({ 'buy' : IDL.Null, 'sell' : IDL.Null }),
+          IDL.Text,
+          IDL.Text,
+          IDL.Int,
+        ],
+        [Trade],
+        [],
+      ),
+    'updateEarningItem' : IDL.Func(
+        [
+          IDL.Text,
+          IDL.Text,
+          IDL.Text,
+          IDL.Nat,
+          IDL.Text,
+          IDL.Variant({ 'active' : IDL.Null, 'disabled' : IDL.Null }),
+        ],
+        [EarningItem],
+        [],
+      ),
     'updateMiningConfig' : IDL.Func([MiningConfig], [], []),
   });
 };

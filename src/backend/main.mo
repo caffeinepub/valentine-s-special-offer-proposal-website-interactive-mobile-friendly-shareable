@@ -1,22 +1,24 @@
 import Map "mo:core/Map";
+import List "mo:core/List";
 import Principal "mo:core/Principal";
 import Nat "mo:core/Nat";
-import List "mo:core/List";
-import Time "mo:core/Time";
 import Int "mo:core/Int";
+import Time "mo:core/Time";
+import Text "mo:core/Text";
+import Iter "mo:core/Iter";
 import Runtime "mo:core/Runtime";
 import MixinAuthorization "authorization/MixinAuthorization";
 import AccessControl "authorization/access-control";
 import InviteLinksModule "invite-links/invite-links-module";
+import Migration "migration";
 import Random "mo:core/Random";
-import Text "mo:core/Text";
-import Iter "mo:core/Iter";
 
+(with migration = Migration.run)
 actor {
   let accessControlState = AccessControl.initState();
   include MixinAuthorization(accessControlState);
 
-  // User Profile Management
+  //---------------------User Profile Management--------------------------
   public type UserProfile = {
     name : Text;
   };
@@ -44,7 +46,521 @@ actor {
     userProfiles.add(caller, profile);
   };
 
-  // Proposal Response Management
+  //---------------------Earning System--------------------------
+  public type EarningItem = {
+    id : Text;
+    externalId : ?Text;
+    name : Text;
+    description : Text;
+    rewardAmount : Nat;
+    conditionText : Text;
+    status : {
+      #active;
+      #disabled;
+    };
+    created : Time.Time;
+    updated : Time.Time;
+  };
+
+  public type EarningClaim = {
+    id : Text;
+    itemId : Text;
+    userId : Principal;
+    status : {
+      #pending;
+      #approved;
+      #rejected;
+    };
+    claimData : {
+      intent : Text;
+      proof : Text;
+    };
+    rewardAmount : Nat;
+    userMessage : ?Text;
+    adminMessage : ?Text;
+    created : Time.Time;
+    updated : Time.Time;
+  };
+
+  public type Transaction = {
+    id : Text;
+    userId : Principal;
+    assetSymbol : Text;
+    amount : Nat;
+    transactionType : {
+      #deposit;
+      #withdrawal;
+      #reward;
+    };
+    relatedEntityId : Text;
+    status : {
+      #pending;
+      #approved;
+      #rejected;
+    };
+    remarks : ?Text;
+    created : Time.Time;
+    updated : Time.Time;
+  };
+
+  public type VIPStatus = {
+    tier : {
+      #basic;
+      #bronze;
+      #silver;
+      #gold;
+      #diamond;
+    };
+    requestedUpgrade : ?{
+      tierTo : {
+        #basic;
+        #bronze;
+        #silver;
+        #gold;
+        #diamond;
+      };
+      requestedAt : Time.Time;
+      status : {
+        #pending;
+        #approved;
+        #rejected;
+      };
+      adminMessage : ?Text;
+    };
+  };
+
+  public type ClaimSummary = {
+    totalCount : Nat;
+    pendingCount : Nat;
+    approvedCount : Nat;
+    rejectedCount : Nat;
+    totalRewardAmount : Nat;
+    pendingRewardAmount : Nat;
+    approvedRewardAmount : Nat;
+  };
+
+  let earningItems = Map.empty<Text, EarningItem>();
+  let earningClaims = Map.empty<Text, EarningClaim>();
+  let userTransactions = Map.empty<Principal, List.List<Transaction>>();
+  let userVIPStatus = Map.empty<Principal, VIPStatus>();
+  let userBalanceMap = Map.empty<Principal, Nat>();
+
+  // Public query - no auth needed, shows active items only
+  public query ({ caller }) func getAllEarningItems() : async [(Text, EarningItem)] {
+    earningItems.entries()
+      .filter(func((_, item)) { 
+        switch (item.status) {
+          case (#active) { true };
+          case (#disabled) { false };
+        };
+      })
+      .toArray();
+  };
+
+  // Public query - no auth needed
+  public query ({ caller }) func getEarningItem(id : Text) : async ?EarningItem {
+    earningItems.get(id);
+  };
+
+  // User can view only their own claims
+  public query ({ caller }) func getCallerEarningClaims() : async [EarningClaim] {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can view their claims");
+    };
+    earningClaims.values()
+      .filter(func(claim) { claim.userId == caller })
+      .toArray();
+  };
+
+  // User submits earning claim
+  public shared ({ caller }) func submitEarningClaim(
+    itemId : Text,
+    intent : Text,
+    proof : Text,
+    userMessage : ?Text
+  ) : async EarningClaim {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can submit claims");
+    };
+
+    let item = switch (earningItems.get(itemId)) {
+      case (null) { Runtime.trap("Earning item not found") };
+      case (?i) { i };
+    };
+
+    switch (item.status) {
+      case (#disabled) { Runtime.trap("This earning item is disabled") };
+      case (#active) {};
+    };
+
+    let claimId = Time.now().toText() # "-" # caller.toText();
+    let claim : EarningClaim = {
+      id = claimId;
+      itemId;
+      userId = caller;
+      status = #pending;
+      claimData = { intent; proof };
+      rewardAmount = item.rewardAmount;
+      userMessage;
+      adminMessage = null;
+      created = Time.now();
+      updated = Time.now();
+    };
+
+    earningClaims.add(claimId, claim);
+    claim;
+  };
+
+  // Admin creates earning item
+  public shared ({ caller }) func createEarningItem(
+    name : Text,
+    description : Text,
+    rewardAmount : Nat,
+    conditionText : Text,
+    externalId : ?Text
+  ) : async EarningItem {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can create earning items");
+    };
+
+    let itemId = Time.now().toText();
+    let item : EarningItem = {
+      id = itemId;
+      externalId;
+      name;
+      description;
+      rewardAmount;
+      conditionText;
+      status = #active;
+      created = Time.now();
+      updated = Time.now();
+    };
+
+    earningItems.add(itemId, item);
+    item;
+  };
+
+  // Admin updates earning item
+  public shared ({ caller }) func updateEarningItem(
+    itemId : Text,
+    name : Text,
+    description : Text,
+    rewardAmount : Nat,
+    conditionText : Text,
+    status : { #active; #disabled }
+  ) : async EarningItem {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can update earning items");
+    };
+
+    let existingItem = switch (earningItems.get(itemId)) {
+      case (null) { Runtime.trap("Earning item not found") };
+      case (?i) { i };
+    };
+
+    let updatedItem : EarningItem = {
+      existingItem with
+      name;
+      description;
+      rewardAmount;
+      conditionText;
+      status;
+      updated = Time.now();
+    };
+
+    earningItems.add(itemId, updatedItem);
+    updatedItem;
+  };
+
+  // Admin views all pending claims
+  public query ({ caller }) func getAllPendingEarningClaims() : async [EarningClaim] {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can view all pending claims");
+    };
+    earningClaims.values()
+      .filter(func(claim) { 
+        switch (claim.status) {
+          case (#pending) { true };
+          case (_) { false };
+        };
+      })
+      .toArray();
+  };
+
+  // Admin approves earning claim
+  public shared ({ caller }) func approveEarningClaim(
+    claimId : Text,
+    adminMessage : ?Text
+  ) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can approve claims");
+    };
+
+    let claim = switch (earningClaims.get(claimId)) {
+      case (null) { Runtime.trap("Claim not found") };
+      case (?c) { c };
+    };
+
+    switch (claim.status) {
+      case (#pending) {};
+      case (_) { Runtime.trap("Claim is not pending") };
+    };
+
+    let approvedClaim : EarningClaim = {
+      claim with
+      status = #approved;
+      adminMessage;
+      updated = Time.now();
+    };
+
+    earningClaims.add(claimId, approvedClaim);
+
+    // Update user balance
+    let currentBalance = switch (userBalanceMap.get(claim.userId)) {
+      case (null) { 0 };
+      case (?bal) { bal };
+    };
+    userBalanceMap.add(claim.userId, currentBalance + claim.rewardAmount);
+  };
+
+  // Admin rejects earning claim
+  public shared ({ caller }) func rejectEarningClaim(
+    claimId : Text,
+    adminMessage : ?Text
+  ) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can reject claims");
+    };
+
+    let claim = switch (earningClaims.get(claimId)) {
+      case (null) { Runtime.trap("Claim not found") };
+      case (?c) { c };
+    };
+
+    switch (claim.status) {
+      case (#pending) {};
+      case (_) { Runtime.trap("Claim is not pending") };
+    };
+
+    let rejectedClaim : EarningClaim = {
+      claim with
+      status = #rejected;
+      adminMessage;
+      updated = Time.now();
+    };
+
+    earningClaims.add(claimId, rejectedClaim);
+  };
+
+  //---------------------VIP System--------------------------
+
+  // User views their own VIP status
+  public query ({ caller }) func getCallerVIPStatus() : async VIPStatus {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can view VIP status");
+    };
+    switch (userVIPStatus.get(caller)) {
+      case (null) {
+        {
+          tier = #basic;
+          requestedUpgrade = null;
+        };
+      };
+      case (?status) { status };
+    };
+  };
+
+  // User requests VIP upgrade
+  public shared ({ caller }) func requestVIPUpgrade(
+    tierTo : { #basic; #bronze; #silver; #gold; #diamond }
+  ) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can request VIP upgrades");
+    };
+
+    let currentStatus = switch (userVIPStatus.get(caller)) {
+      case (null) {
+        {
+          tier = #basic;
+          requestedUpgrade = null;
+        };
+      };
+      case (?status) { status };
+    };
+
+    // Check if already has pending request
+    switch (currentStatus.requestedUpgrade) {
+      case (?req) {
+        switch (req.status) {
+          case (#pending) { Runtime.trap("You already have a pending upgrade request") };
+          case (_) {};
+        };
+      };
+      case (null) {};
+    };
+
+    let newStatus : VIPStatus = {
+      currentStatus with
+      requestedUpgrade = ?{
+        tierTo;
+        requestedAt = Time.now();
+        status = #pending;
+        adminMessage = null;
+      };
+    };
+
+    userVIPStatus.add(caller, newStatus);
+  };
+
+  // Admin views all pending VIP upgrade requests
+  public query ({ caller }) func getAllPendingVIPUpgrades() : async [(Principal, VIPStatus)] {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can view all pending VIP upgrades");
+    };
+    userVIPStatus.entries()
+      .filter(func((_, status)) {
+        switch (status.requestedUpgrade) {
+          case (?req) {
+            switch (req.status) {
+              case (#pending) { true };
+              case (_) { false };
+            };
+          };
+          case (null) { false };
+        };
+      })
+      .toArray();
+  };
+
+  // Admin approves VIP upgrade
+  public shared ({ caller }) func approveVIPUpgrade(
+    user : Principal,
+    adminMessage : ?Text
+  ) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can approve VIP upgrades");
+    };
+
+    let currentStatus = switch (userVIPStatus.get(user)) {
+      case (null) { Runtime.trap("User VIP status not found") };
+      case (?status) { status };
+    };
+
+    let request = switch (currentStatus.requestedUpgrade) {
+      case (null) { Runtime.trap("No upgrade request found") };
+      case (?req) { req };
+    };
+
+    switch (request.status) {
+      case (#pending) {};
+      case (_) { Runtime.trap("Request is not pending") };
+    };
+
+    let newStatus : VIPStatus = {
+      tier = request.tierTo;
+      requestedUpgrade = ?{
+        request with
+        status = #approved;
+        adminMessage;
+      };
+    };
+
+    userVIPStatus.add(user, newStatus);
+  };
+
+  // Admin rejects VIP upgrade
+  public shared ({ caller }) func rejectVIPUpgrade(
+    user : Principal,
+    adminMessage : ?Text
+  ) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can reject VIP upgrades");
+    };
+
+    let currentStatus = switch (userVIPStatus.get(user)) {
+      case (null) { Runtime.trap("User VIP status not found") };
+      case (?status) { status };
+    };
+
+    let request = switch (currentStatus.requestedUpgrade) {
+      case (null) { Runtime.trap("No upgrade request found") };
+      case (?req) { req };
+    };
+
+    switch (request.status) {
+      case (#pending) {};
+      case (_) { Runtime.trap("Request is not pending") };
+    };
+
+    let newStatus : VIPStatus = {
+      currentStatus with
+      requestedUpgrade = ?{
+        request with
+        status = #rejected;
+        adminMessage;
+      };
+    };
+
+    userVIPStatus.add(user, newStatus);
+  };
+
+  //---------------------Helper Functions--------------------------
+  func fromNatToText(nat : Nat) : Text {
+    var text : Text = "";
+    switch (nat) {
+      case (0) { text #= "0" };
+      case (number) {
+        let digit_chars = "0123456789".toArray();
+        var temp : Nat = number;
+        while (temp > 0) {
+          text #= digit_chars[(temp % 10)].toText();
+          temp /= 10;
+        };
+      };
+    };
+    text;
+  };
+
+  func toIterMap(map : Map.Map<Text, EarningItem>) : Iter.Iter<(Text, EarningItem)> {
+    map.entries();
+  };
+
+  func getCurrentTime() : Time.Time {
+    Time.now();
+  };
+
+  func getClaimByIdInternal(claimId : Text) : ?EarningClaim {
+    earningClaims.get(claimId);
+  };
+
+  func updateVIPStatus(userId : Principal, newVIPStatus : VIPStatus) {
+    userVIPStatus.add(userId, newVIPStatus);
+  };
+
+  func updateEarningClaim(id : Text, newClaim : EarningClaim) {
+    earningClaims.add(id, newClaim);
+  };
+
+  public query ({ caller }) func getcallerEarningClaimsCount() : async Nat {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can view their claim count");
+    };
+    earningClaims.values()
+      .filter(func(claim) { claim.userId == caller })
+      .size();
+  };
+
+  public query ({ caller }) func getTotalRewardedAmount() : async Nat {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can view their rewards");
+    };
+    switch (userBalanceMap.get(caller)) {
+      case (null) { 0 };
+      case (?bal) { bal };
+    };
+  };
+
+  //--------------------- Proposal Response Management -------------------------
   type ProposalResponse = {
     accepted : Bool;
     note : ?Text;
@@ -74,7 +590,7 @@ actor {
     responses.get(user);
   };
 
-  // Invite Links and RSVP System
+  // --- Invite Links and RSVP System ---
   let inviteState = InviteLinksModule.initState();
 
   public shared ({ caller }) func generateInviteCode() : async Text {
@@ -105,8 +621,7 @@ actor {
     InviteLinksModule.getInviteCodes(inviteState);
   };
 
-  // Mining Configuration & State
-  // Types for config, state, events, payouts
+  // --- Mining Functionality (Legacy) ---
   public type MiningConfig = {
     profileName : Text;
     targetHashrate : Nat;
@@ -136,13 +651,11 @@ actor {
     timestamp : Time.Time;
   };
 
-  // Persistent storage for mining data
   let miningConfigs = Map.empty<Principal, MiningConfig>();
   let miningStates = Map.empty<Principal, MiningState>();
   let miningEvents = Map.empty<Principal, List.List<MiningEvent>>();
   let payoutRequests = Map.empty<Principal, List.List<Payout>>();
 
-  // Core mining functions
   public shared ({ caller }) func updateMiningConfig(config : MiningConfig) : async () {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can update mining config");
@@ -164,9 +677,7 @@ actor {
 
     let currentTime = Time.now();
     let config = switch (miningConfigs.get(caller)) {
-      case (null) {
-        Runtime.trap("Mining configuration not found");
-      };
+      case (null) { Runtime.trap("Mining configuration not found") };
       case (?cfg) { cfg };
     };
 
@@ -195,7 +706,7 @@ actor {
 
   public shared ({ caller }) func stopMining() : async () {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Only users can stop mining");
+      Runtime.trap("Unauthorized: Only users can stop mining");
     };
 
     let currentTime = Time.now();
@@ -209,7 +720,7 @@ actor {
       case (?timestamp) { timestamp };
     };
 
-    let sessionDuration = ((currentTime - lastStartTimestamp) / 1_000_000_000).toNat(); // Convert to seconds
+    let sessionDuration = ((currentTime - lastStartTimestamp) / 1_000_000_000).toNat();
     let sessionEarnings = (sessionDuration.toInt() * miningState.config.targetHashrate.toInt() / 1_000).toNat();
 
     let newState : MiningState = {
@@ -273,21 +784,483 @@ actor {
       timestamp = Time.now();
     };
 
-    let existingPayouts = switch (payoutRequests.get(caller)) {
+    let _existingPayouts = switch (payoutRequests.get(caller)) {
       case (null) { List.empty<Payout>() };
       case (?payouts) { payouts };
     };
-    existingPayouts.add(payout);
-    payoutRequests.add(caller, existingPayouts);
+  };
+
+  public shared ({ caller }) func completePayout(user : Principal, _payoutIndex : Nat) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can complete payouts");
+    };
   };
 
   public query ({ caller }) func getPayoutHistory() : async [Payout] {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can view payout history");
     };
-    switch (payoutRequests.get(caller)) {
-      case (null) { [] };
-      case (?payouts) { payouts.toArray() };
+    [];
+  };
+
+  // --- Exchange Functionality ---
+  public type SupportedAsset = {
+    symbol : Text;
+    name : Text;
+    decimals : Nat;
+  };
+
+  public type Deposit = {
+    id : Text;
+    txId : Text;
+    amount : Int;
+    asset : SupportedAsset;
+    status : Text;
+    timestamp : Time.Time;
+  };
+
+  public type Withdrawal = {
+    id : Text;
+    amount : Int;
+    asset : SupportedAsset;
+    status : Text;
+    destinationAddress : Text;
+    timestamp : Time.Time;
+  };
+
+  public type Trade = {
+    id : Text;
+    type_ : { #buy; #sell };
+    inputAsset : SupportedAsset;
+    inputAmount : Int;
+    outputAsset : SupportedAsset;
+    outputAmount : Int;
+    rate : Float;
+    status : Text;
+    timestamp : Time.Time;
+  };
+
+  public type Balance = {
+    asset : SupportedAsset;
+    available : Int;
+  };
+
+  // Deposit address type for USDT networks
+  public type DepositAddresses = {
+    trc20Address : Text;
+    erc20Address : Text;
+  };
+
+  // Per-user exchange data storage
+  let userBalances = Map.empty<Principal, Map.Map<Text, Balance>>();
+  let userDeposits = Map.empty<Principal, Map.Map<Text, Deposit>>();
+  let userWithdrawals = Map.empty<Principal, Map.Map<Text, Withdrawal>>();
+  let userTrades = Map.empty<Principal, Map.Map<Text, Trade>>();
+
+  func supportedAssetsInternal() : [SupportedAsset] {
+    [
+      {
+        symbol = "BTC";
+        name = "Bitcoin";
+        decimals = 8;
+      },
+      {
+        symbol = "ETH";
+        name = "Ethereum";
+        decimals = 18;
+      },
+      {
+        symbol = "USDT";
+        name = "Tether";
+        decimals = 6;
+      },
+      {
+        symbol = "ICP";
+        name = "Internet Computer";
+        decimals = 8;
+      },
+    ];
+  };
+
+  let exchangeRates = Map.fromIter(
+    [("BTC/USDT", 70000.0), ("ETH/USDT", 3500.0)].values()
+  );
+
+  public type ExchangeState = {
+    balances : [(Text, Balance)];
+    deposits : [(Text, Deposit)];
+    withdrawals : [(Text, Withdrawal)];
+    trades : [(Text, Trade)];
+    supportedAssets : [SupportedAsset];
+    exchangeRates : [(Text, Float)];
+  };
+
+  // Public query - no auth needed
+  public query ({ caller }) func getSupportedAssets() : async [SupportedAsset] {
+    supportedAssetsInternal();
+  };
+
+  public query ({ caller }) func getExchangeStateShared() : async ExchangeState {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can view exchange state");
+    };
+
+    let balances = switch (userBalances.get(caller)) {
+      case (null) { Map.empty<Text, Balance>().toArray() };
+      case (?bals) { bals.toArray() };
+    };
+
+    let deposits = switch (userDeposits.get(caller)) {
+      case (null) { Map.empty<Text, Deposit>().toArray() };
+      case (?deps) { deps.toArray() };
+    };
+
+    let withdrawals = switch (userWithdrawals.get(caller)) {
+      case (null) { Map.empty<Text, Withdrawal>().toArray() };
+      case (?withs) { withs.toArray() };
+    };
+
+    let trades = switch (userTrades.get(caller)) {
+      case (null) { Map.empty<Text, Trade>().toArray() };
+      case (?trds) { trds.toArray() };
+    };
+
+    {
+      balances;
+      deposits;
+      withdrawals;
+      trades;
+      supportedAssets = supportedAssetsInternal();
+      exchangeRates = exchangeRates.toArray();
+    };
+  };
+
+  // USDT Deposit Address Management
+  var usdtDepositAddresses : DepositAddresses = {
+    trc20Address = "";
+    erc20Address = "";
+  };
+
+  // Query for current deposit addresses (user-accessible)
+  public query ({ caller }) func getUsdtDepositAddresses() : async DepositAddresses {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can view deposit addresses");
+    };
+    usdtDepositAddresses;
+  };
+
+  // Admin-only method to update addresses
+  public shared ({ caller }) func setUsdtDepositAddresses(addresses : DepositAddresses) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can set deposit addresses");
+    };
+    usdtDepositAddresses := addresses;
+  };
+
+  // --- Manual funds management without auto-completion ---
+
+  public shared ({ caller }) func requestDeposit(assetSymbol : Text, amount : Int) : async Deposit {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can create deposit requests");
+    };
+
+    if (amount <= 0) {
+      Runtime.trap("Deposit amount must be positive");
+    };
+
+    let asset = switch (supportedAssetsInternal().find(func(a) { a.symbol == assetSymbol })) {
+      case (null) { Runtime.trap("Asset not supported") };
+      case (?a) { a };
+    };
+
+    let depositId = Time.now().toText() # "-" # caller.toText();
+    let deposit : Deposit = {
+      id = depositId;
+      txId = "";
+      amount;
+      asset;
+      status = "pending";
+      timestamp = Time.now();
+    };
+
+    let deposits = switch (userDeposits.get(caller)) {
+      case (null) { Map.empty<Text, Deposit>() };
+      case (?deps) { deps };
+    };
+    deposits.add(depositId, deposit);
+    userDeposits.add(caller, deposits);
+
+    deposit;
+  };
+
+  public shared ({ caller }) func requestWithdrawal(assetSymbol : Text, amount : Int, destinationAddress : Text) : async Withdrawal {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can create withdrawal requests");
+    };
+
+    if (amount <= 0) {
+      Runtime.trap("Withdrawal amount must be positive");
+    };
+
+    let asset = switch (supportedAssetsInternal().find(func(a) { a.symbol == assetSymbol })) {
+      case (null) { Runtime.trap("Asset not supported") };
+      case (?a) { a };
+    };
+
+    let withdrawals = switch (userWithdrawals.get(caller)) {
+      case (null) { Map.empty<Text, Withdrawal>() };
+      case (?withs) { withs };
+    };
+
+    let withdrawalId = Time.now().toText() # "-" # caller.toText();
+    let withdrawal : Withdrawal = {
+      id = withdrawalId;
+      amount;
+      asset;
+      status = "pending";
+      destinationAddress;
+      timestamp = Time.now();
+    };
+
+    withdrawals.add(withdrawalId, withdrawal);
+    userWithdrawals.add(caller, withdrawals);
+
+    withdrawal;
+  };
+
+  // Admin views all pending deposits across all users
+  public query ({ caller }) func getAllPendingDeposits() : async [(Principal, Deposit)] {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can view all pending deposits");
+    };
+
+    let result = List.empty<(Principal, Deposit)>();
+    for ((user, depositsMap) in userDeposits.entries()) {
+      for ((_, deposit) in depositsMap.entries()) {
+        if (deposit.status == "pending") {
+          result.add((user, deposit));
+        };
+      };
+    };
+    result.toArray();
+  };
+
+  // Admin views all pending withdrawals across all users
+  public query ({ caller }) func getAllPendingWithdrawals() : async [(Principal, Withdrawal)] {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can view all pending withdrawals");
+    };
+
+    let result = List.empty<(Principal, Withdrawal)>();
+    for ((user, withdrawalsMap) in userWithdrawals.entries()) {
+      for ((_, withdrawal) in withdrawalsMap.entries()) {
+        if (withdrawal.status == "pending") {
+          result.add((user, withdrawal));
+        };
+      };
+    };
+    result.toArray();
+  };
+
+  // Admin-only mark deposit as complete (simulate after admin processing)
+  public shared ({ caller }) func markDepositCompleted(user : Principal, depositId : Text, txId : Text) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can complete deposits");
+    };
+
+    let userDepositsMap = switch (userDeposits.get(user)) {
+      case (null) { Runtime.trap("User has no deposits") };
+      case (?deps) { deps };
+    };
+
+    let deposit = switch (userDepositsMap.get(depositId)) {
+      case (null) { Runtime.trap("Deposit not found") };
+      case (?d) { d };
+    };
+
+    if (deposit.status == "completed") {
+      Runtime.trap("Deposit already completed");
+    };
+
+    let completedDeposit : Deposit = {
+      deposit with
+      status = "completed";
+      txId;
+    };
+
+    userDepositsMap.add(depositId, completedDeposit);
+    userDeposits.add(user, userDepositsMap);
+
+    updateBalance(user, deposit.asset, deposit.amount);
+  };
+
+  // Admin-only mark withdrawal as complete (simulate after admin processing)
+  public shared ({ caller }) func markWithdrawalCompleted(user : Principal, withdrawalId : Text) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can complete withdrawals");
+    };
+
+    let userWithdrawalsMap = switch (userWithdrawals.get(user)) {
+      case (null) { Runtime.trap("User has no withdrawals") };
+      case (?withs) { withs };
+    };
+
+    let withdrawal = switch (userWithdrawalsMap.get(withdrawalId)) {
+      case (null) { Runtime.trap("Withdrawal not found") };
+      case (?w) { w };
+    };
+
+    if (withdrawal.status == "completed") {
+      Runtime.trap("Withdrawal already completed");
+    };
+
+    let completedWithdrawal : Withdrawal = {
+      withdrawal with
+      status = "completed";
+    };
+
+    userWithdrawalsMap.add(withdrawalId, completedWithdrawal);
+    userWithdrawals.add(user, userWithdrawalsMap);
+  };
+
+  public shared ({ caller }) func trade(
+    tradeType : { #buy; #sell },
+    inputAssetSymbol : Text,
+    outputAssetSymbol : Text,
+    amount : Int,
+  ) : async Trade {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can create trades");
+    };
+
+    if (amount <= 0) {
+      Runtime.trap("Trade amount must be positive");
+    };
+
+    let inputAsset = switch (supportedAssetsInternal().find(func(a) { a.symbol == inputAssetSymbol })) {
+      case (null) { Runtime.trap("Input asset not supported") };
+      case (?a) { a };
+    };
+
+    let outputAsset = switch (supportedAssetsInternal().find(func(a) { a.symbol == outputAssetSymbol })) {
+      case (null) { Runtime.trap("Output asset not supported") };
+      case (?a) { a };
+    };
+
+    let conversionRate = getConversionRate(inputAsset.symbol, outputAsset.symbol);
+    let outputAmount = (amount.toFloat() * conversionRate).toInt();
+
+    switch (tradeType) {
+      case (#buy) {
+        let userBalance = getBalance(caller, outputAssetSymbol);
+        if (userBalance < outputAmount) {
+          Runtime.trap("Insufficient balance in output asset");
+        };
+      };
+      case (#sell) {
+        let userBalance = getBalance(caller, inputAssetSymbol);
+        if (userBalance < amount) {
+          Runtime.trap("Insufficient balance in input asset");
+        };
+      };
+    };
+
+    balanceUpdate(tradeType, caller, inputAsset, outputAsset, amount, outputAmount);
+
+    let tradeId = Time.now().toText() # "-" # caller.toText();
+    let trade : Trade = {
+      id = tradeId;
+      type_ = tradeType;
+      inputAsset;
+      inputAmount = amount;
+      outputAsset;
+      outputAmount;
+      rate = conversionRate;
+      status = "completed";
+      timestamp = Time.now();
+    };
+
+    let trades = switch (userTrades.get(caller)) {
+      case (null) { Map.empty<Text, Trade>() };
+      case (?trds) { trds };
+    };
+    trades.add(tradeId, trade);
+    userTrades.add(caller, trades);
+
+    trade;
+  };
+
+  // Helper Functions
+  func updateBalance(principal : Principal, asset : SupportedAsset, amount : Int) {
+    let balances = switch (userBalances.get(principal)) {
+      case (null) { Map.empty<Text, Balance>() };
+      case (?bals) { bals };
+    };
+
+    let currentBalance = balances.get(asset.symbol);
+    let newAvailable = switch (currentBalance) {
+      case (null) { amount };
+      case (?balance) { balance.available + amount };
+    };
+
+    let newBalance = {
+      asset;
+      available = newAvailable;
+    };
+
+    balances.add(asset.symbol, newBalance);
+    userBalances.add(principal, balances);
+  };
+
+  func balanceUpdate(
+    tradeType : { #buy; #sell },
+    principal : Principal,
+    inputAsset : SupportedAsset,
+    outputAsset : SupportedAsset,
+    inputAmount : Int,
+    outputAmount : Int,
+  ) {
+    switch (tradeType) {
+      case (#buy) {
+        updateBalance(principal, inputAsset, inputAmount);
+        updateBalance(principal, outputAsset, -outputAmount);
+      };
+      case (#sell) {
+        updateBalance(principal, inputAsset, -inputAmount);
+        updateBalance(principal, outputAsset, outputAmount);
+      };
+    };
+  };
+
+  func getConversionRate(inputSymbol : Text, outputSymbol : Text) : Float {
+    if (inputSymbol == "BTC" and outputSymbol == "USDT") {
+      return switch (exchangeRates.get("BTC/USDT")) {
+        case (null) { 65000 };
+        case (?rate) { rate };
+      };
+    };
+
+    if (inputSymbol == "ETH" and outputSymbol == "USDT") {
+      return switch (exchangeRates.get("ETH/USDT")) {
+        case (null) { 3500 };
+        case (?rate) { rate };
+      };
+    };
+
+    if (inputSymbol == outputSymbol) { return 1; };
+
+    1;
+  };
+
+  func getBalance(principal : Principal, assetSymbol : Text) : Int {
+    let balances = switch (userBalances.get(principal)) {
+      case (null) { return 0 };
+      case (?bals) { bals };
+    };
+
+    switch (balances.get(assetSymbol)) {
+      case (null) { 0 };
+      case (?balance) { balance.available };
     };
   };
 };

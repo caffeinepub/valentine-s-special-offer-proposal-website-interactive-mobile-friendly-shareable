@@ -1,12 +1,11 @@
 import { useState } from 'react';
+import { useSaveCallerUserProfile } from '../hooks/useQueries';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useSaveCallerUserProfile } from '../hooks/useQueries';
-import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import type { UserProfile } from '../backend';
+import { Loader2 } from 'lucide-react';
 
 export function ProfileSetupModal() {
   const [name, setName] = useState('');
@@ -20,52 +19,43 @@ export function ProfileSetupModal() {
       return;
     }
 
-    const profile: UserProfile = {
-      name: name.trim(),
-    };
-
-    try {
-      await saveProfile.mutateAsync(profile);
-      toast.success('Profile created successfully');
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to create profile');
-    }
+    saveProfile.mutate(
+      { name: name.trim() },
+      {
+        onSuccess: () => {
+          toast.success('Profile created successfully!');
+        },
+        onError: (error: any) => {
+          toast.error(error.message || 'Failed to create profile');
+        },
+      }
+    );
   };
 
   return (
     <Dialog open={true}>
       <DialogContent className="sm:max-w-md" onPointerDownOutside={(e) => e.preventDefault()}>
         <DialogHeader>
-          <DialogTitle>Welcome to Bitcoin Mining</DialogTitle>
+          <DialogTitle>Welcome to CryptoExchange</DialogTitle>
           <DialogDescription>
-            Please enter your name to set up your profile and get started.
+            Please enter your name to complete your profile setup
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="name">Your Name</Label>
+            <Label htmlFor="profile-name">Your Name</Label>
             <Input
-              id="name"
+              id="profile-name"
+              type="text"
+              placeholder="Enter your name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Enter your name"
               autoFocus
-              required
             />
           </div>
-          <Button
-            type="submit"
-            className="w-full gap-2"
-            disabled={saveProfile.isPending}
-          >
-            {saveProfile.isPending ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Creating Profile...
-              </>
-            ) : (
-              'Continue'
-            )}
+          <Button type="submit" className="w-full" disabled={saveProfile.isPending}>
+            {saveProfile.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Continue
           </Button>
         </form>
       </DialogContent>

@@ -10,6 +10,53 @@ import type { ActorMethod } from '@icp-sdk/core/agent';
 import type { IDL } from '@icp-sdk/core/candid';
 import type { Principal } from '@icp-sdk/core/principal';
 
+export interface Balance { 'asset' : SupportedAsset, 'available' : bigint }
+export interface Deposit {
+  'id' : string,
+  'status' : string,
+  'asset' : SupportedAsset,
+  'txId' : string,
+  'timestamp' : Time,
+  'amount' : bigint,
+}
+export interface DepositAddresses {
+  'erc20Address' : string,
+  'trc20Address' : string,
+}
+export interface EarningClaim {
+  'id' : string,
+  'status' : { 'pending' : null } |
+    { 'approved' : null } |
+    { 'rejected' : null },
+  'itemId' : string,
+  'created' : Time,
+  'rewardAmount' : bigint,
+  'userId' : Principal,
+  'userMessage' : [] | [string],
+  'claimData' : { 'intent' : string, 'proof' : string },
+  'updated' : Time,
+  'adminMessage' : [] | [string],
+}
+export interface EarningItem {
+  'id' : string,
+  'status' : { 'active' : null } |
+    { 'disabled' : null },
+  'created' : Time,
+  'rewardAmount' : bigint,
+  'externalId' : [] | [string],
+  'name' : string,
+  'description' : string,
+  'conditionText' : string,
+  'updated' : Time,
+}
+export interface ExchangeState {
+  'trades' : Array<[string, Trade]>,
+  'exchangeRates' : Array<[string, number]>,
+  'withdrawals' : Array<[string, Withdrawal]>,
+  'supportedAssets' : Array<SupportedAsset>,
+  'deposits' : Array<[string, Deposit]>,
+  'balances' : Array<[string, Balance]>,
+}
 export interface InviteCode {
   'created' : Time,
   'code' : string,
@@ -50,33 +97,136 @@ export interface RSVP {
   'timestamp' : Time,
   'attending' : boolean,
 }
+export interface SupportedAsset {
+  'decimals' : bigint,
+  'name' : string,
+  'symbol' : string,
+}
 export type Time = bigint;
+export interface Trade {
+  'id' : string,
+  'status' : string,
+  'rate' : number,
+  'type' : { 'buy' : null } |
+    { 'sell' : null },
+  'outputAsset' : SupportedAsset,
+  'inputAsset' : SupportedAsset,
+  'timestamp' : Time,
+  'inputAmount' : bigint,
+  'outputAmount' : bigint,
+}
 export interface UserProfile { 'name' : string }
 export type UserRole = { 'admin' : null } |
   { 'user' : null } |
   { 'guest' : null };
+export interface VIPStatus {
+  'requestedUpgrade' : [] | [
+    {
+      'status' : { 'pending' : null } |
+        { 'approved' : null } |
+        { 'rejected' : null },
+      'tierTo' : { 'bronze' : null } |
+        { 'gold' : null } |
+        { 'diamond' : null } |
+        { 'basic' : null } |
+        { 'silver' : null },
+      'adminMessage' : [] | [string],
+      'requestedAt' : Time,
+    }
+  ],
+  'tier' : { 'bronze' : null } |
+    { 'gold' : null } |
+    { 'diamond' : null } |
+    { 'basic' : null } |
+    { 'silver' : null },
+}
+export interface Withdrawal {
+  'id' : string,
+  'status' : string,
+  'asset' : SupportedAsset,
+  'destinationAddress' : string,
+  'timestamp' : Time,
+  'amount' : bigint,
+}
 export interface _SERVICE {
   '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
+  'approveEarningClaim' : ActorMethod<[string, [] | [string]], undefined>,
+  'approveVIPUpgrade' : ActorMethod<[Principal, [] | [string]], undefined>,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
+  'completePayout' : ActorMethod<[Principal, bigint], undefined>,
+  'createEarningItem' : ActorMethod<
+    [string, string, bigint, string, [] | [string]],
+    EarningItem
+  >,
   'generateInviteCode' : ActorMethod<[], string>,
+  'getAllEarningItems' : ActorMethod<[], Array<[string, EarningItem]>>,
+  'getAllPendingDeposits' : ActorMethod<[], Array<[Principal, Deposit]>>,
+  'getAllPendingEarningClaims' : ActorMethod<[], Array<EarningClaim>>,
+  'getAllPendingVIPUpgrades' : ActorMethod<[], Array<[Principal, VIPStatus]>>,
+  'getAllPendingWithdrawals' : ActorMethod<[], Array<[Principal, Withdrawal]>>,
   'getAllRSVPs' : ActorMethod<[], Array<RSVP>>,
+  'getCallerEarningClaims' : ActorMethod<[], Array<EarningClaim>>,
   'getCallerResponse' : ActorMethod<[], [] | [ProposalResponse]>,
   'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
   'getCallerUserRole' : ActorMethod<[], UserRole>,
+  'getCallerVIPStatus' : ActorMethod<[], VIPStatus>,
+  'getEarningItem' : ActorMethod<[string], [] | [EarningItem]>,
+  'getExchangeStateShared' : ActorMethod<[], ExchangeState>,
   'getInviteCodes' : ActorMethod<[], Array<InviteCode>>,
   'getMiningConfig' : ActorMethod<[], [] | [MiningConfig]>,
   'getMiningEvents' : ActorMethod<[], Array<MiningEvent>>,
   'getMiningState' : ActorMethod<[], [] | [MiningState]>,
   'getPayoutHistory' : ActorMethod<[], Array<Payout>>,
   'getResponse' : ActorMethod<[Principal], [] | [ProposalResponse]>,
+  'getSupportedAssets' : ActorMethod<[], Array<SupportedAsset>>,
+  'getTotalRewardedAmount' : ActorMethod<[], bigint>,
+  'getUsdtDepositAddresses' : ActorMethod<[], DepositAddresses>,
   'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
+  'getcallerEarningClaimsCount' : ActorMethod<[], bigint>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
+  'markDepositCompleted' : ActorMethod<[Principal, string, string], undefined>,
+  'markWithdrawalCompleted' : ActorMethod<[Principal, string], undefined>,
+  'rejectEarningClaim' : ActorMethod<[string, [] | [string]], undefined>,
+  'rejectVIPUpgrade' : ActorMethod<[Principal, [] | [string]], undefined>,
+  'requestDeposit' : ActorMethod<[string, bigint], Deposit>,
   'requestPayout' : ActorMethod<[bigint], undefined>,
+  'requestVIPUpgrade' : ActorMethod<
+    [
+      { 'bronze' : null } |
+        { 'gold' : null } |
+        { 'diamond' : null } |
+        { 'basic' : null } |
+        { 'silver' : null },
+    ],
+    undefined
+  >,
+  'requestWithdrawal' : ActorMethod<[string, bigint, string], Withdrawal>,
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
+  'setUsdtDepositAddresses' : ActorMethod<[DepositAddresses], undefined>,
   'startMining' : ActorMethod<[], undefined>,
   'stopMining' : ActorMethod<[], undefined>,
+  'submitEarningClaim' : ActorMethod<
+    [string, string, string, [] | [string]],
+    EarningClaim
+  >,
   'submitRSVP' : ActorMethod<[string, boolean, string], undefined>,
   'submitResponse' : ActorMethod<[boolean, [] | [string]], undefined>,
+  'trade' : ActorMethod<
+    [{ 'buy' : null } | { 'sell' : null }, string, string, bigint],
+    Trade
+  >,
+  'updateEarningItem' : ActorMethod<
+    [
+      string,
+      string,
+      string,
+      bigint,
+      string,
+      { 'active' : null } |
+        { 'disabled' : null },
+    ],
+    EarningItem
+  >,
   'updateMiningConfig' : ActorMethod<[MiningConfig], undefined>,
 }
 export declare const idlService: IDL.ServiceClass;

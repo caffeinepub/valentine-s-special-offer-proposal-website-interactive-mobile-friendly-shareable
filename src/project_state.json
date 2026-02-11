@@ -1,16 +1,22 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 7,
-  "summary": "Pivot project to build a fully functional Bitcoin mining website, with no mention that it is educational or a demo.",
+  "projectStateVersion": 17,
+  "summary": "Focus Taskora Global on a reward-based investment/earning platform (ads + tasks/mini-games) with VIP tiers, manual USDT (TRC20/ERC20) deposit/withdrawal flows admin-managed, and an admin panel; drop the crypto-exchange-style direction.",
   "architectural_notes": [
     "Keep it simple: static HTML/CSS/JS site suitable for easy hosting (e.g., GitHub Pages/Netlify).",
     "Responsive-first design for mobile viewing.",
-    "Project scope has changed from a Valentine proposal site to a Bitcoin mining website."
+    "Project scope has changed from a Valentine proposal site to a Bitcoin mining website.",
+    "Keep deployed Version 4 saved/side-by-side before starting the new site build.",
+    "Project scope pivot requested: build a full crypto exchange (deposits/transfers, multi-coin support, full exchange functions) and display prices above real market prices.",
+    "No direct blockchain integrations; deposits/withdrawals are admin-managed/manual using provided USDT TRC20/ERC20 addresses and recorded txids (placeholders allowed initially).",
+    "User clarified the intended product is a reward-based investment/earning platform (ads + tasks) with VIP tiers and manual admin-managed USDT deposits/withdrawals, not a full crypto exchange."
   ],
   "known_issues": [
-    "Mining process is not starting when user attempts to start mining (start control has no effect / mining remains inactive)."
+    "Mining process is not starting when user attempts to start mining (start control has no effect / mining remains inactive).",
+    "Withdrawals/payouts remain stuck in \"Pending\" and do not transition to \"Received\"/completed status after the user receives the withdrawal."
   ],
   "isFixRequest": true,
+  "imageRequirements": "## Required Images\n- Taskora Global logo mark, flat vector style (taskora-logo.dim_512x512.png)\n- Hero illustration of a modern rewards dashboard on a laptop/phone, dark SaaS aesthetic (taskora-hero.dim_1400x800.png)\n- Abstract background pattern with subtle geometric shapes, dark theme (taskora-bg.dim_1600x900.png)\n- Icon set: ads/play button symbol, checklist/tasks symbol, VIP crown symbol, minimal line icons (taskora-icons.dim_128x128.png)",
   "existing_features": [
     {
       "id": "feature-create-a-mobile-first-valentine-proposal-website-that-presents-a-special-offer-to-the-user-s-girlfriend-and-guides-her-through-a-short-romantic-flow-landing-offer-details-proposal-question-all-user-facing-text-must-be-in-english",
@@ -131,6 +137,278 @@
         "REQ-17"
       ],
       "version": 1
+    },
+    {
+      "id": "feature-update-the-payouts-ui-to-allow-the-signed-in-user-to-mark-a-pending-payout-as-received-and-show-the-updated-status-consistently-in-the-payout-history-table-using-english-labels",
+      "title": "Update the Payouts UI to allow the signed-in user to mark a pending payout as received, and show the updated status consistently in the payout history table using English labels.",
+      "reqIds": [
+        "REQ-19"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-improve-payout-history-refresh-behavior-so-users-can-see-status-changes-reflected-without-manual-refresh-when-there-are-pending-payouts",
+      "title": "Improve payout history refresh behavior so users can see status changes reflected without manual refresh when there are pending payouts.",
+      "reqIds": [
+        "REQ-20"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-replace-the-current-bitcoin-mining-focused-primary-app-flow-header-landing-and-main-content-with-a-professional-bitcoin-key-tools-website-focused-on-generating-and-verifying-bitcoin-private-keys-in-wif-format-with-all-user-facing-text-in-english",
+      "title": "Replace the current Bitcoin mining-focused primary app flow (header, landing, and main content) with a professional Bitcoin key tools website focused on generating and verifying Bitcoin private keys in WIF format, with all user-facing text in English.",
+      "reqIds": [
+        "REQ-21"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-a-client-side-wif-private-key-generator-that-produces-cryptographically-secure-random-keys-and-renders-1-wif-compressed-2-the-corresponding-public-bitcoin-address-p2pkh-and-3-the-corresponding-public-key-include-copy-buttons-for-each-value",
+      "title": "Implement a client-side WIF private key generator that produces cryptographically secure random keys and renders: (1) WIF (compressed), (2) the corresponding public Bitcoin address (P2PKH), and (3) the corresponding public key; include Copy buttons for each value.",
+      "reqIds": [
+        "REQ-22"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-wif-verification-tool-that-lets-a-user-paste-a-wif-and-if-valid-displays-the-derived-public-key-and-p2pkh-address-if-invalid-show-a-clear-english-validation-error-without-exposing-stack-traces",
+      "title": "Add a WIF verification tool that lets a user paste a WIF and, if valid, displays the derived public key and P2PKH address; if invalid, show a clear English validation error without exposing stack traces.",
+      "reqIds": [
+        "REQ-23"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-prominent-security-and-safety-ui-messaging-stating-that-the-app-does-not-and-will-not-attempt-to-find-other-people-s-private-keys-does-not-scan-the-blockchain-for-matching-keys-and-that-generated-keys-are-shown-only-in-the-user-s-browser-do-not-store-generated-private-keys-in-the-backend",
+      "title": "Add prominent security and safety UI messaging stating that the app does not and will not attempt to find other people’s private keys, does not scan the blockchain for matching keys, and that generated keys are shown only in the user’s browser; do not store generated private keys in the backend.",
+      "reqIds": [
+        "REQ-24"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-site-metadata-and-navigation-to-match-the-new-bitcoin-key-tools-purpose-including-updating-the-html-document-title-and-meta-description-currently-set-for-the-mining-dashboard",
+      "title": "Update site metadata and navigation to match the new Bitcoin key tools purpose, including updating the HTML document title and meta description currently set for the mining dashboard.",
+      "reqIds": [
+        "REQ-25"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-create-a-cohesive-professional-visual-presentation-for-the-bitcoin-key-tools-website-layout-typography-spacing-and-components-distinct-from-the-current-mining-dashboard-framing-while-keeping-strong-readability-and-contrast",
+      "title": "Create a cohesive, professional visual presentation for the Bitcoin key tools website (layout, typography, spacing, and components) distinct from the current mining dashboard framing, while keeping strong readability and contrast.",
+      "reqIds": [
+        "REQ-26"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-generate-and-include-new-custom-static-image-assets-for-the-bitcoin-key-tools-website-and-render-them-from-the-frontend-as-static-files-under-frontend-public-assets-generated-do-not-serve-images-through-the-backend",
+      "title": "Generate and include new custom static image assets for the Bitcoin key tools website and render them from the frontend as static files under frontend/public/assets/generated (do not serve images through the backend).",
+      "reqIds": [
+        "REQ-27"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-replace-the-current-bitcoin-wif-tools-primary-app-flow-header-landing-and-main-content-with-a-crypto-exchange-style-application-shell-removing-wif-generator-verifier-specific-screens-and-copy-from-the-main-user-journey",
+      "title": "Replace the current Bitcoin WIF tools primary app flow (header, landing, and main content) with a crypto exchange-style application shell, removing WIF-generator/verifier-specific screens and copy from the main user journey.",
+      "reqIds": [
+        "REQ-28"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-clear-prominent-safety-disclosure-in-the-ui-stating-that-the-app-does-not-connect-to-real-blockchains-does-not-provide-real-deposit-addresses-and-cannot-receive-real-transfers-from-other-exchanges-all-balances-and-transfers-in-the-app-are-simulated-within-the-application",
+      "title": "Add a clear, prominent safety disclosure in the UI stating that the app does not connect to real blockchains, does not provide real deposit addresses, and cannot receive real transfers from other exchanges; all balances and transfers in the app are simulated within the application.",
+      "reqIds": [
+        "REQ-29"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-a-markets-page-that-lists-multiple-coins-at-minimum-btc-eth-usdt-with-1-a-live-reference-price-fetched-from-a-public-price-api-from-the-browser-2-an-exchange-display-price-calculated-as-reference-price-plus-a-configurable-markup-and-3-24h-change-if-available-from-the-api",
+      "title": "Implement a Markets page that lists multiple coins (at minimum BTC, ETH, USDT) with: (1) a live reference price fetched from a public price API from the browser, (2) an exchange display price calculated as reference price plus a configurable markup, and (3) 24h change if available from the API.",
+      "reqIds": [
+        "REQ-30"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-an-exchange-pricing-settings-ui-that-lets-the-user-configure-the-markup-applied-to-reference-prices-percentage-and-persists-it-locally-in-the-browser-so-it-survives-refresh",
+      "title": "Add an Exchange Pricing Settings UI that lets the user configure the markup applied to reference prices (percentage) and persists it locally in the browser so it survives refresh.",
+      "reqIds": [
+        "REQ-31"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-a-wallet-page-that-shows-per-coin-balances-for-the-signed-in-user-including-available-balance-and-a-simple-balance-history-list-of-recent-simulated-balance-changes-deposits-internal-trades-withdrawals",
+      "title": "Implement a Wallet page that shows per-coin balances for the signed-in user, including available balance and a simple balance history list of recent simulated balance changes (deposits, internal trades, withdrawals).",
+      "reqIds": [
+        "REQ-32"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-a-simulated-deposits-flow-for-each-supported-coin-provide-a-create-deposit-action-that-generates-a-unique-deposit-reference-id-lets-the-user-enter-an-amount-and-credits-the-user-balance-after-confirmation-record-a-deposit-transaction-in-backend-history",
+      "title": "Implement a simulated Deposits flow: for each supported coin, provide a \"Create Deposit\" action that generates a unique deposit reference ID, lets the user enter an amount, and credits the user balance after confirmation; record a deposit transaction in backend history.",
+      "reqIds": [
+        "REQ-33"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-a-simulated-withdrawals-flow-allow-the-signed-in-user-to-create-a-withdrawal-request-by-selecting-coin-entering-amount-and-entering-a-destination-address-string-validate-sufficient-balance-store-the-withdrawal-request-with-a-status-lifecycle-requested-completed-rejected-and-show-it-in-a-withdrawals-history-table",
+      "title": "Implement a simulated Withdrawals flow: allow the signed-in user to create a withdrawal request by selecting coin, entering amount, and entering a destination address string; validate sufficient balance; store the withdrawal request with a status lifecycle (Requested → Completed/Rejected) and show it in a Withdrawals history table.",
+      "reqIds": [
+        "REQ-34"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-a-basic-trade-page-for-simulated-spot-trading-at-minimum-btc-usdt-and-eth-usdt-allow-placing-market-buy-sell-orders-using-the-app-s-marked-up-display-price-update-balances-accordingly-and-record-each-fill-in-an-orders-trades-history-list",
+      "title": "Implement a basic Trade page for simulated spot trading (at minimum BTC/USDT and ETH/USDT): allow placing market buy/sell orders using the app’s marked-up display price, update balances accordingly, and record each fill in an Orders/Trades history list.",
+      "reqIds": [
+        "REQ-35"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-site-metadata-html-title-and-meta-description-and-in-app-branding-navigation-to-reflect-the-new-crypto-exchange-style-app-purpose",
+      "title": "Update site metadata (HTML title and meta description) and in-app branding/navigation to reflect the new crypto exchange-style app purpose.",
+      "reqIds": [
+        "REQ-36"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-create-a-cohesive-professional-exchange-style-visual-theme-colors-typography-spacing-components-distinct-from-the-current-bitcoin-wif-tools-framing-ensuring-strong-readability-and-contrast-and-avoiding-a-default-blue-purple-look",
+      "title": "Create a cohesive, professional exchange-style visual theme (colors, typography, spacing, components) distinct from the current Bitcoin WIF tools framing, ensuring strong readability and contrast and avoiding a default blue/purple look.",
+      "reqIds": [
+        "REQ-37"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-frontend-react-query-hooks-and-pages-to-call-the-new-backend-exchange-methods-including-loading-states-empty-states-and-user-friendly-english-error-messages-no-raw-stack-traces",
+      "title": "Add frontend React Query hooks and pages to call the new backend exchange methods, including loading states, empty states, and user-friendly English error messages (no raw stack traces).",
+      "reqIds": [
+        "REQ-39"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-generate-and-include-new-custom-static-image-assets-for-the-crypto-exchange-style-website-and-render-them-from-the-frontend-as-static-files-under-frontend-public-assets-generated-do-not-serve-images-through-the-backend",
+      "title": "Generate and include new custom static image assets for the crypto exchange-style website and render them from the frontend as static files under frontend/public/assets/generated (do not serve images through the backend).",
+      "reqIds": [
+        "REQ-40"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-transfers-ui-to-support-manual-usdt-deposits-without-blockchain-connectivity-by-showing-admin-configured-usdt-deposit-addresses-for-both-trc20-and-erc20-networks-including-copy-to-clipboard-controls-and-clear-english-instructions-that-deposits-are-processed-manually-by-the-admin",
+      "title": "Update the Transfers UI to support manual USDT deposits without blockchain connectivity by showing admin-configured USDT deposit addresses for both TRC20 and ERC20 networks, including copy-to-clipboard controls and clear English instructions that deposits are processed manually by the admin.",
+      "reqIds": [
+        "REQ-41"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-an-admin-panel-ui-that-is-accessible-only-to-admin-users-and-provides-controls-to-a-set-update-usdt-deposit-addresses-for-trc20-and-erc20-b-view-pending-deposit-requests-and-pending-withdrawal-requests-across-all-users-and-c-mark-each-request-as-completed-while-recording-an-optional-transaction-id-and-an-optional-admin-note",
+      "title": "Implement an Admin Panel UI that is accessible only to admin users and provides controls to (a) set/update USDT deposit addresses for TRC20 and ERC20, (b) view pending deposit requests and pending withdrawal requests across all users, and (c) mark each request as completed while recording an optional transaction ID and an optional admin note.",
+      "reqIds": [
+        "REQ-44"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-existing-disclosure-copy-on-the-transfers-page-to-remove-demonstration-wording-and-instead-clearly-state-that-deposits-withdrawals-are-handled-manually-by-the-admin-and-that-the-app-does-not-connect-to-real-blockchains-or-generate-real-deposit-addresses-automatically",
+      "title": "Update the existing disclosure/copy on the Transfers page to remove 'demonstration' wording and instead clearly state that deposits/withdrawals are handled manually by the admin and that the app does not connect to real blockchains or generate real deposit addresses automatically.",
+      "reqIds": [
+        "REQ-45"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-replace-the-current-crypto-exchange-style-primary-app-flow-header-landing-and-main-content-with-a-taskora-global-reward-based-investment-earning-platform-experience-removing-exchange-specific-pages-and-copy-from-the-main-user-journey",
+      "title": "Replace the current crypto-exchange-style primary app flow (header, landing, and main content) with a Taskora Global reward-based investment/earning platform experience, removing exchange-specific pages and copy from the main user journey.",
+      "reqIds": [
+        "REQ-46"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-a-user-dashboard-page-for-the-reward-platform-that-shows-a-current-available-balance-b-vip-tier-status-c-a-summary-of-today-this-week-earnings-from-ads-tasks-and-d-recent-activity-earnings-deposits-withdrawals-with-clear-english-status-labels",
+      "title": "Implement a user Dashboard page for the reward platform that shows (a) current available balance, (b) VIP tier/status, (c) a summary of today/this week earnings from ads/tasks, and (d) recent activity (earnings, deposits, withdrawals) with clear English status labels.",
+      "reqIds": [
+        "REQ-47"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-an-earn-page-that-lists-available-earning-opportunities-including-at-minimum-watch-ads-and-complete-tasks-and-allow-a-signed-in-user-to-submit-a-completion-claim-for-an-earning-item-that-becomes-visible-in-their-earnings-history-with-a-pending-approved-rejected-lifecycle",
+      "title": "Add an Earn page that lists available earning opportunities, including at minimum “Watch Ads” and “Complete Tasks”, and allow a signed-in user to submit a completion/claim for an earning item that becomes visible in their earnings history with a Pending/Approved/Rejected lifecycle.",
+      "reqIds": [
+        "REQ-48"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-vip-tiers-create-a-vip-page-that-shows-tier-options-in-a-comparison-table-and-allows-a-signed-in-user-to-request-a-vip-upgrade-vip-upgrade-requests-must-be-pending-until-an-admin-approves-them",
+      "title": "Implement VIP tiers: create a VIP page that shows tier options in a comparison table and allows a signed-in user to request a VIP upgrade; VIP upgrade requests must be pending until an admin approves them.",
+      "reqIds": [
+        "REQ-49"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-manual-usdt-trc20-erc20-deposits-and-withdrawals-as-the-platform-s-wallet-transfers-module-users-can-view-admin-configured-usdt-deposit-addresses-for-both-networks-create-a-deposit-request-and-create-a-withdrawal-request-all-requests-remain-pending-until-an-admin-marks-them-completed",
+      "title": "Implement manual USDT (TRC20/ERC20) deposits and withdrawals as the platform’s wallet/transfers module: users can view admin-configured USDT deposit addresses for both networks, create a deposit request, and create a withdrawal request; all requests remain Pending until an admin marks them Completed.",
+      "reqIds": [
+        "REQ-50"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-an-admin-panel-that-is-accessible-only-to-admin-users-and-provides-controls-to-a-set-update-usdt-trc20-erc20-deposit-addresses-b-view-and-process-pending-deposit-requests-and-pending-withdrawal-requests-across-all-users-c-review-and-approve-reject-pending-earning-claims-and-d-review-and-approve-reject-pending-vip-upgrade-requests",
+      "title": "Implement an Admin Panel that is accessible only to admin users and provides controls to (a) set/update USDT TRC20/ERC20 deposit addresses, (b) view and process pending deposit requests and pending withdrawal requests across all users, (c) review and approve/reject pending earning claims, and (d) review and approve/reject pending VIP upgrade requests.",
+      "reqIds": [
+        "REQ-51"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-frontend-react-query-hooks-queries-mutations-for-the-new-reward-platform-backend-methods-including-cache-invalidation-so-user-dashboards-and-histories-update-immediately-after-actions-claim-submission-admin-approvals-deposit-withdraw-completion-vip-approval",
+      "title": "Add frontend React Query hooks (queries + mutations) for the new reward-platform backend methods, including cache invalidation so user dashboards and histories update immediately after actions (claim submission, admin approvals, deposit/withdraw completion, VIP approval).",
+      "reqIds": [
+        "REQ-53"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-site-metadata-and-in-app-branding-to-match-taskora-global-as-a-reward-based-earning-platform-html-title-meta-description-header-brand-text",
+      "title": "Update site metadata and in-app branding to match “Taskora Global” as a reward-based earning platform (HTML title, meta description, header brand text).",
+      "reqIds": [
+        "REQ-54"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-create-and-apply-a-cohesive-visual-theme-for-the-taskora-global-reward-platform-colors-typography-spacing-component-styling-that-feels-like-a-modern-international-rewards-fintech-saas-and-is-distinct-from-the-current-exchange-styling-ensure-strong-readability-and-contrast",
+      "title": "Create and apply a cohesive visual theme for the Taskora Global reward platform (colors, typography, spacing, component styling) that feels like a modern international rewards/fintech SaaS and is distinct from the current exchange styling; ensure strong readability and contrast.",
+      "reqIds": [
+        "REQ-55"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-generate-and-include-new-custom-static-image-assets-for-the-taskora-global-reward-platform-and-render-them-from-the-frontend-as-static-files-under-frontend-public-assets-generated-do-not-serve-images-through-the-backend-update-the-ui-to-use-the-new-assets-instead-of-the-current-exchange-logo",
+      "title": "Generate and include new custom static image assets for the Taskora Global reward platform and render them from the frontend as static files under frontend/public/assets/generated (do not serve images through the backend); update the UI to use the new assets instead of the current exchange logo.",
+      "reqIds": [
+        "REQ-56"
+      ],
+      "version": 1
     }
   ],
   "new_feature_requests": [
@@ -185,10 +463,96 @@
         "REQ-15"
       ],
       "status": "pending"
+    },
+    {
+      "id": "AR-12",
+      "summary": "Add a backend mechanism to transition a user’s payout request status from \"pending\" to a completed state so withdrawals do not remain pending forever.",
+      "reqIds": [
+        "REQ-18"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-13",
+      "summary": "Create a professional Bitcoin wallet private key (WIF) generator/finder website (user requested generating valid WIF private keys).",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-26",
+      "summary": "Build “Taskora Global” reward platform (watch ads + sponsored mini-games) with modern SaaS UI, dark mode, mobile-responsive, global-friendly design.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-27",
+      "summary": "Integrate CPA ad networks with an API-ready structure and track real completed ad/task events (no fake balances; earnings only from completed tasks).",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-28",
+      "summary": "User dashboard: wallet balance, task history, ad watch counter, withdrawal history, referral earnings.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-29",
+      "summary": "Membership system: free tier + VIP tiers (e.g., $50–$5000+) with higher task limits; clear benefit comparison table; no automatic guaranteed profit.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-30",
+      "summary": "Payments module with USDT (TRC20 & ERC20) deposit/withdrawal request flows handled manually by admin (no direct blockchain connection), including transparent fees, minimum withdrawal threshold, and blockchain transaction ID recording.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-31",
+      "summary": "Anti-fraud system: IP detection, bot prevention, task validation logic, suspicious activity monitoring.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-32",
+      "summary": "Legal pages: Terms & Conditions, guaranteed income disclaimer, and disclosure that earnings depend on advertiser availability.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-33",
+      "summary": "Admin panel: manage tasks, adjust revenue share %, approve withdrawals, user management, analytics dashboard; allow admin to set/maintain deposit addresses (USDT TRC20/ERC20) and record manual balance adjustments.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-35",
+      "summary": "Change the backend deposit and withdrawal flows so they are manual/admin-managed: user-created deposits and withdrawals must remain in a pending state until an admin explicitly marks them completed (and optionally records a blockchain transaction ID for the admin’s manual processing). Do not auto-complete or auto-credit balances on deposit creation; do not auto-complete withdrawals on request creation.",
+      "reqIds": [
+        "REQ-42"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-36",
+      "summary": "Add backend support for storing and serving admin-configured USDT deposit addresses for TRC20 and ERC20 networks, and expose: (1) a user-accessible query to fetch the current deposit addresses, and (2) an admin-only method to update them.",
+      "reqIds": [
+        "REQ-43"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-43",
+      "summary": "Update the backend canister to add persistent data models and methods for the reward platform: user account state (balance + VIP tier), earning item definitions, earning claim submission + review (pending/approved/rejected), VIP upgrade requests + review, and admin-only processing actions; enforce access control consistently using existing authorization patterns.",
+      "reqIds": [
+        "REQ-52"
+      ],
+      "status": "pending"
     }
   ],
   "gameProjectType": "none",
-  "projectName": "Bitcoin mining website",
+  "projectName": "Taskora Global",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

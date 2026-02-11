@@ -1,34 +1,27 @@
-/**
- * Extracts a user-friendly English error message from various error types.
- * Prioritizes backend trap messages when available.
- */
 export function getErrorMessage(error: unknown): string {
-  if (!error) return 'An unknown error occurred';
-
-  // Handle string errors
-  if (typeof error === 'string') return error;
-
-  // Handle Error objects
   if (error instanceof Error) {
-    // Check for backend trap messages in the error message
-    const message = error.message;
-    
-    // Backend traps often include "Uncaught Error:" prefix
-    if (message.includes('Uncaught Error:')) {
-      const trapMessage = message.split('Uncaught Error:')[1]?.trim();
-      if (trapMessage) return trapMessage;
+    // Check if it's a backend trap message
+    if (error.message.includes('Unauthorized')) {
+      return 'You do not have permission to perform this action.';
     }
-    
-    // Return the full message if no trap pattern found
-    return message;
+    if (error.message.includes('Insufficient balance')) {
+      return 'Insufficient balance for this transaction.';
+    }
+    if (error.message.includes('not found')) {
+      return 'The requested resource was not found.';
+    }
+    if (error.message.includes('already completed')) {
+      return 'This transaction has already been completed.';
+    }
+    if (error.message.includes('Invalid status')) {
+      return 'Invalid transaction status.';
+    }
+    return error.message;
   }
 
-  // Handle objects with message property
-  if (typeof error === 'object' && error !== null && 'message' in error) {
-    const msg = (error as { message: unknown }).message;
-    if (typeof msg === 'string') return msg;
+  if (typeof error === 'string') {
+    return error;
   }
 
-  // Fallback
-  return 'An unexpected error occurred';
+  return 'An unexpected error occurred. Please try again.';
 }

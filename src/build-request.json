@@ -1,87 +1,224 @@
 {
   "kind": "build_request",
-  "title": "Fix mining start flow so sessions can start after configuration is saved",
-  "priority": "high",
+  "title": "Pivot Taskora Global to a reward-based investment/earning platform with tasks, VIP tiers, manual USDT transfers, and admin panel",
+  "priority": "normal",
   "requirements": [
     {
-      "id": "REQ-15",
-      "text": "Fix the mining start preconditions and default state behavior so a user who has saved a mining configuration can start mining even when no MiningState record exists yet. Specifically: ensure the backend returns a sensible default MiningState when a MiningConfig exists but MiningState is missing, and ensure startMining transitions the state to Active without requiring an existing MiningState.",
-      "target": "backend",
-      "source": {
-        "messageIds": [
-          "msg-6"
-        ],
-        "quotes": [
-          "But mining process is not starting bro"
-        ]
-      },
-      "acceptanceCriteria": [
-        "If a caller has a saved MiningConfig but has never started mining, getMiningState returns a non-null MiningState with isActive=false, lastStartTimestamp=null, and cumulative counters initialized (not trapping and not returning null).",
-        "Calling startMining after saving MiningConfig results in getMiningState returning isActive=true and lastStartTimestamp set.",
-        "If startMining is called while already active, the backend responds predictably (either no-op with no state corruption, or traps with a clear English message).",
-        "Cumulative runtime/earnings are not unintentionally reset on subsequent start/stop cycles (starting a new session should preserve cumulative totals and only update session timestamps)."
-      ]
-    },
-    {
-      "id": "REQ-16",
-      "text": "Update the dashboard start/stop UX so the Start Mining button is available whenever a mining configuration exists, even if miningState is currently null/empty. Do not block the dashboard behind \"Configuration Required\" based solely on miningState.config; instead, use the saved mining configuration (miningConfig) to determine whether configuration is complete, and allow starting mining from the dashboard.",
+      "id": "REQ-46",
+      "text": "Replace the current crypto-exchange-style primary app flow (header, landing, and main content) with a Taskora Global reward-based investment/earning platform experience, removing exchange-specific pages and copy from the main user journey.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-6"
+          "msg-1"
         ],
         "quotes": [
-          "But mining process is not starting bro"
+          "Reward-based investment style platform? • Ads + task earnings? • VIP tiers? • Manual USDT deposits/withdrawals? • Admin panel? Ye sb add krna"
         ]
       },
       "acceptanceCriteria": [
-        "After saving settings in the Mining Settings page, returning to the dashboard shows start/stop controls (not only a configuration-required card).",
-        "If no mining configuration exists, the dashboard shows an English message indicating configuration is required and provides a clear path to the Settings section (e.g., a button that navigates to Settings).",
-        "Clicking Start Mining changes the status indicator to Active within one refresh cycle (via react-query invalidation/refetch).",
-        "If startMining fails (e.g., authorization/config missing), the UI shows an English toast error that is actionable (not silent), and the button leaves the system in a consistent state (no stuck loading)."
+        "When the app loads, the primary navigation and landing content are focused on earning rewards and VIP membership (not markets/trade/exchange pricing).",
+        "No user-facing page presents the app as a crypto exchange or shows exchange-specific labels like “Markets”/“Trade” as primary sections."
       ]
     },
     {
-      "id": "REQ-17",
-      "text": "Ensure the recent activity/events list reflects mining start/stop actions immediately after the user clicks Start Mining/Stop Mining, including when mining is started for the first time after configuration. Any backend trap/permission issues should be visible to the user through English error messages.",
-      "target": "both",
+      "id": "REQ-47",
+      "text": "Implement a user Dashboard page for the reward platform that shows (a) current available balance, (b) VIP tier/status, (c) a summary of today/this week earnings from ads/tasks, and (d) recent activity (earnings, deposits, withdrawals) with clear English status labels.",
+      "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-6"
+          "msg-1"
         ],
         "quotes": [
-          "But mining process is not starting bro"
+          "Reward-based investment style platform? • Ads + task earnings? • VIP tiers? • Manual USDT deposits/withdrawals? • Admin panel? Ye sb add krna"
         ]
       },
       "acceptanceCriteria": [
-        "After Start Mining succeeds, the events query shows a new \"Started\" event without requiring a full page refresh.",
-        "After Stop Mining succeeds, the events query shows a new \"Stopped\" event with session-duration details (if available) without requiring a full page refresh.",
-        "If the backend rejects the action (e.g., missing config, unauthorized), the frontend displays the backend-provided English error message (or a clear English fallback) and does not show a misleading success toast."
+        "A signed-in user can view a dashboard with balance, VIP tier, and a recent activity list.",
+        "Loading, empty, and error states display user-friendly English messages (no raw stack traces)."
+      ]
+    },
+    {
+      "id": "REQ-48",
+      "text": "Add an Earn page that lists available earning opportunities, including at minimum “Watch Ads” and “Complete Tasks”, and allow a signed-in user to submit a completion/claim for an earning item that becomes visible in their earnings history with a Pending/Approved/Rejected lifecycle.",
+      "target": "both",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "Ads + task earnings?"
+        ]
+      },
+      "acceptanceCriteria": [
+        "The Earn page renders a list of earning items and a clear call-to-action to submit completion/claim.",
+        "Submitting a claim creates a new history entry with status “Pending”.",
+        "After admin approval, the user’s balance increases and the entry status becomes “Approved”.",
+        "If admin rejects, the entry status becomes “Rejected” and the user balance does not increase."
+      ]
+    },
+    {
+      "id": "REQ-49",
+      "text": "Implement VIP tiers: create a VIP page that shows tier options in a comparison table and allows a signed-in user to request a VIP upgrade; VIP upgrade requests must be pending until an admin approves them.",
+      "target": "both",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "VIP tiers?"
+        ]
+      },
+      "acceptanceCriteria": [
+        "VIP page displays multiple tiers (e.g., Free plus paid tiers) with clear English descriptions of benefits.",
+        "A signed-in user can submit a VIP upgrade request that appears as “Pending” in their account status/history.",
+        "An admin can approve the request; after approval, the user’s VIP tier updates on the user Dashboard and VIP page."
+      ]
+    },
+    {
+      "id": "REQ-50",
+      "text": "Implement manual USDT (TRC20/ERC20) deposits and withdrawals as the platform’s wallet/transfers module: users can view admin-configured USDT deposit addresses for both networks, create a deposit request, and create a withdrawal request; all requests remain Pending until an admin marks them Completed.",
+      "target": "both",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "Manual USDT deposits/withdrawals?"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Transfers page shows USDT (TRC20) and USDT (ERC20) deposit addresses with copy-to-clipboard controls.",
+        "A deposit request can be created by the signed-in user and is stored with status “Pending” until admin completion.",
+        "A withdrawal request can be created by the signed-in user and is stored with status “Pending” until admin completion.",
+        "Clear English disclosure states that deposits/withdrawals are processed manually by the admin and the app does not connect to real blockchains or generate real deposit addresses automatically."
+      ]
+    },
+    {
+      "id": "REQ-51",
+      "text": "Implement an Admin Panel that is accessible only to admin users and provides controls to (a) set/update USDT TRC20/ERC20 deposit addresses, (b) view and process pending deposit requests and pending withdrawal requests across all users, (c) review and approve/reject pending earning claims, and (d) review and approve/reject pending VIP upgrade requests.",
+      "target": "both",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "Admin panel?"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Non-admin users cannot access the Admin Panel UI and receive a clear English access error/empty state.",
+        "Admin can update TRC20/ERC20 addresses; users see updated values on Transfers page without a manual refresh (standard query invalidation/refetch).",
+        "Admin can mark deposits and withdrawals as Completed; user history updates to show Completed status.",
+        "Admin can approve/reject earning claims; approval credits the user balance and updates the claim status accordingly.",
+        "Admin can approve/reject VIP upgrade requests; approval updates the user VIP tier."
+      ]
+    },
+    {
+      "id": "REQ-52",
+      "text": "Update the backend canister to add persistent data models and methods for the reward platform: user account state (balance + VIP tier), earning item definitions, earning claim submission + review (pending/approved/rejected), VIP upgrade requests + review, and admin-only processing actions; enforce access control consistently using existing authorization patterns.",
+      "target": "backend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "Reward-based investment style platform? • Ads + task earnings? • VIP tiers? • Manual USDT deposits/withdrawals? • Admin panel? Ye sb add krna"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Backend exposes user-accessible methods to: fetch account summary, list earning items, submit earning claim, fetch earning history, fetch VIP status/requests, fetch USDT deposit addresses, create deposit request, create withdrawal request, fetch transfer history.",
+        "Backend exposes admin-only methods to: set USDT deposit addresses, list pending deposits/withdrawals across users, complete deposits/withdrawals, list pending earning claims, approve/reject earning claims, list pending VIP requests, approve/reject VIP requests.",
+        "Unauthorized calls trap with clear English messages (e.g., “Unauthorized: Only admins can …” / “Unauthorized: Only users can …”)."
+      ]
+    },
+    {
+      "id": "REQ-53",
+      "text": "Add frontend React Query hooks (queries + mutations) for the new reward-platform backend methods, including cache invalidation so user dashboards and histories update immediately after actions (claim submission, admin approvals, deposit/withdraw completion, VIP approval).",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "Ye sb add krna"
+        ]
+      },
+      "acceptanceCriteria": [
+        "All new user/admin actions trigger appropriate query invalidation and refresh relevant screens without requiring a full page reload.",
+        "Errors are displayed as user-friendly English toasts/messages using the existing error-mapping utility patterns."
+      ]
+    },
+    {
+      "id": "REQ-54",
+      "text": "Update site metadata and in-app branding to match “Taskora Global” as a reward-based earning platform (HTML title, meta description, header brand text).",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "Reward-based investment style platform?"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Browser tab title and meta description reflect Taskora Global’s reward/earning platform purpose (not exchange wording).",
+        "Header branding shows “Taskora Global” and matches the new navigation structure."
+      ]
+    },
+    {
+      "id": "REQ-55",
+      "text": "Create and apply a cohesive visual theme for the Taskora Global reward platform (colors, typography, spacing, component styling) that feels like a modern international rewards/fintech SaaS and is distinct from the current exchange styling; ensure strong readability and contrast.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "Reward-based investment style platform?"
+        ]
+      },
+      "acceptanceCriteria": [
+        "The app has a consistent, professional visual theme across Dashboard/Earn/VIP/Transfers/Admin pages.",
+        "Theme avoids a default blue/purple look unless it is clearly transformed into a distinct brand palette.",
+        "All key UI elements meet strong contrast/readability expectations (buttons, text, cards, tables)."
+      ]
+    },
+    {
+      "id": "REQ-56",
+      "text": "Generate and include new custom static image assets for the Taskora Global reward platform and render them from the frontend as static files under frontend/public/assets/generated (do not serve images through the backend); update the UI to use the new assets instead of the current exchange logo.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "Reward-based investment style platform?"
+        ]
+      },
+      "acceptanceCriteria": [
+        "All required generated images exist under frontend/public/assets/generated and are referenced by the UI via static paths.",
+        "The header shows the new Taskora Global logo asset (not the current exchange-logo file)."
       ]
     }
   ],
   "constraints": [
-    "All user-facing text must be in English.",
-    "Backend must remain a single Motoko actor in backend/main.mo (no additional backend services).",
-    "Do not modify files under frontend/src/components/ui or other frontend immutable paths listed in SYSTEM_CONTEXT; compose them instead."
+    "Backend must remain a single Motoko actor with all logic in backend/main.mo.",
+    "Only generate/update backend/migration.mo if an upgrade requires migrating existing stable state (follow the project’s conditional migration policy).",
+    "Do not edit files under frontend/src/components/ui or any other immutable frontend paths listed in SYSTEM_CONTEXT.",
+    "All user-facing text must be in English."
   ],
   "nonGoals": [
-    "Do not add real Bitcoin mining or external network integrations.",
-    "Do not add new authentication providers beyond Internet Identity.",
-    "Do not redesign unrelated pages (settings/payouts) beyond what is necessary to make mining start work correctly."
+    "Do not integrate real blockchain connectivity or generate real deposit addresses automatically.",
+    "Do not integrate third-party ad networks or external task APIs unless the user provides specific API details/endpoints.",
+    "Do not implement real-money investment guarantees or claims of guaranteed profit in UI copy."
   ],
   "imageRequirements": {
-    "required": [],
+    "required": [
+      "Taskora Global logo mark, flat vector style (taskora-logo.dim_512x512.png)",
+      "Hero illustration of a modern rewards dashboard on a laptop/phone, dark SaaS aesthetic (taskora-hero.dim_1400x800.png)",
+      "Abstract background pattern with subtle geometric shapes, dark theme (taskora-bg.dim_1600x900.png)",
+      "Icon set: ads/play button symbol, checklist/tasks symbol, VIP crown symbol, minimal line icons (taskora-icons.dim_128x128.png)"
+    ],
     "edits": []
-  },
-  "userProfileUpdate": {
-    "goalsToAdd": [],
-    "goalsToRemove": [],
-    "preferencesToAdd": [],
-    "preferencesToRemove": [],
-    "miscToAdd": [],
-    "miscToRemove": [],
-    "fieldsToSet": {},
-    "fieldsToDelete": []
   }
 }
