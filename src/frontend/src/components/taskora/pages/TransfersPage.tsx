@@ -10,9 +10,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { SimulationDisclosure } from '../../exchange/SimulationDisclosure';
 import { CopyField } from '../../CopyField';
 import { useGetUsdtAddresses, useRequestDeposit, useRequestWithdrawal, useGetTransferHistory } from '../../../hooks/useRewardQueries';
+import { useLocalDepositProof } from '../../../hooks/useLocalDepositProof';
 import { getErrorMessage } from '../../../utils/getErrorMessage';
 import { toast } from 'sonner';
-import { ArrowDownToLine, ArrowUpFromLine, Loader2, Clock } from 'lucide-react';
+import { ArrowDownToLine, ArrowUpFromLine, Loader2, Clock, Upload, X, Info } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
 export function TransfersPage() {
@@ -20,10 +21,26 @@ export function TransfersPage() {
   const { data: transferHistory, isLoading: historyLoading } = useGetTransferHistory();
   const requestDeposit = useRequestDeposit();
   const requestWithdrawal = useRequestWithdrawal();
+  const { txId, screenshot, setTxId, setScreenshot, clearProof } = useLocalDepositProof();
 
   const [depositAmount, setDepositAmount] = useState('');
   const [withdrawAmount, setWithdrawAmount] = useState('');
   const [withdrawAddress, setWithdrawAddress] = useState('');
+
+  const handleScreenshotChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('Screenshot must be less than 5MB');
+        return;
+      }
+      if (!file.type.startsWith('image/')) {
+        toast.error('Please upload an image file');
+        return;
+      }
+      setScreenshot(file);
+    }
+  };
 
   const handleRequestDeposit = async () => {
     const amount = parseFloat(depositAmount);
@@ -33,9 +50,13 @@ export function TransfersPage() {
     }
 
     try {
-      await requestDeposit.mutateAsync(Math.floor(amount * 100));
-      toast.success('Deposit request submitted! Please send funds to the address above and wait for admin confirmation.');
+      await requestDeposit.mutateAsync({
+        amount: Math.floor(amount * 100),
+        txId: txId.trim() || null,
+      });
+      toast.success('Deposit request submitted! Awaiting admin approval.');
       setDepositAmount('');
+      // Keep txId and screenshot for reference
     } catch (error) {
       toast.error(getErrorMessage(error));
     }
@@ -117,9 +138,10 @@ export function TransfersPage() {
                 value={addresses?.erc20Address || 'Not set yet'}
                 description="Ethereum network - Higher fees"
               />
-              <div className="pt-4 border-t">
-                <Label htmlFor="deposit-amount">Amount (USDT)</Label>
-                <div className="flex gap-2 mt-2">
+              
+              <div className="pt-4 border-t space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="deposit-amount">Amount (USDT)</Label>
                   <Input
                     id="deposit-amount"
                     type="number"
@@ -129,14 +151,77 @@ export function TransfersPage() {
                     min="0"
                     step="0.01"
                   />
-                  <Button onClick={handleRequestDeposit} disabled={requestDeposit.isPending}>
-                    {requestDeposit.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Submit Request
-                  </Button>
                 </div>
-                <p className="text-xs text-muted-foreground mt-2">
-                  After sending funds, submit a deposit request. Admin will confirm and credit your account.
-                </p>
+
+                <div className="space-y-2">
+                  <Label htmlFor="tx-id">Transaction ID (Optional)</Label>
+                  <Input
+                    id="tx-id"
+                    placeholder="Enter your transaction ID"
+                    value={txId}
+                    onChange={(e) => setTxId(e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Helps admin verify your deposit faster
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="screenshot">Upload Screenshot (Stored Locally)</Label>
+                  <div className="space-y-2">
+                    {screenshot ? (
+                      <div className="relative border rounded-lg p-2">
+                        <img 
+                          src={screenshot} 
+                          alt="Deposit proof" 
+                          className="max-h-48 mx-auto rounded"
+                        />
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="absolute top-2 right-2"
+                          onClick={() => setScreenshot(null)}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="border-2 border-dashed rounded-lg p-6 text-center">
+                        <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                        <Label htmlFor="screenshot-input" className="cursor-pointer text-sm text-primary hover:underline">
+                          Click to upload screenshot
+                        </Label>
+                        <Input
+                          id="screenshot-input"
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={handleScreenshotChange}
+                        />
+                      </div>
+                    )}
+                  </div>
+                  <Alert>
+                    <Info className="h-4 w-4" />
+                    <AlertDescription className="text-xs">
+                      Screenshot is stored locally on your device only and is not uploaded to the backend. 
+                      It's for your personal reference.
+                    </AlertDescription>
+                  </Alert>
+                </div>
+
+                <Button onClick={handleRequestDeposit} disabled={requestDeposit.isPending} className="w-full">
+                  {requestDeposit.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Submit Deposit Request
+                </Button>
+                
+                <Alert>
+                  <Info className="h-4 w-4" />
+                  <AlertDescription className="text-xs">
+                    After sending funds, submit this request. Admin will review and credit your account. 
+                    Status remains "Pending" until admin approval.
+                  </AlertDescription>
+                </Alert>
               </div>
             </CardContent>
           </Card>
@@ -219,6 +304,11 @@ export function TransfersPage() {
                     <p className="text-sm text-muted-foreground">
                       {formatDistanceToNow(new Date(Number(transfer.timestamp) / 1_000_000), { addSuffix: true })}
                     </p>
+                    {transfer.txId && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        TX: {transfer.txId}
+                      </p>
+                    )}
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="font-semibold">

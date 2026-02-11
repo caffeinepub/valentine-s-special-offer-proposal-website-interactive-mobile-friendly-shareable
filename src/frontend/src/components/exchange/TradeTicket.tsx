@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { usePlaceTrade, useExchangeState } from '../../hooks/useExchangeQueries';
+import { useTrade, useGetExchangeState } from '../../hooks/useExchangeQueries';
 import { useMarketPrices } from '../../hooks/useMarketPrices';
 import { usePricingMarkup } from '../../hooks/usePricingMarkup';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,10 +17,10 @@ export function TradeTicket() {
   const [side, setSide] = useState<'buy' | 'sell'>('buy');
   const [amount, setAmount] = useState('');
   
-  const { data: exchangeState } = useExchangeState();
+  const { data: exchangeState } = useGetExchangeState();
   const { data: prices } = useMarketPrices();
   const { applyMarkup } = usePricingMarkup();
-  const placeTrade = usePlaceTrade();
+  const placeTrade = useTrade();
 
   const [baseAsset, quoteAsset] = pair.split('/');
   
@@ -49,7 +49,7 @@ export function TradeTicket() {
       return;
     }
 
-    const amountInSmallestUnit = BigInt(Math.floor(numAmount * Math.pow(10, Number(baseAssetInfo.decimals))));
+    const amountInSmallestUnit = Math.floor(numAmount * Math.pow(10, Number(baseAssetInfo.decimals)));
 
     placeTrade.mutate(
       {

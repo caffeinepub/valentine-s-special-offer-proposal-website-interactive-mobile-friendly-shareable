@@ -1,4 +1,4 @@
-import { useExchangeState } from '../../hooks/useExchangeQueries';
+import { useGetExchangeState } from '../../hooks/useExchangeQueries';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -6,7 +6,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Wallet } from 'lucide-react';
 
 export function WalletBalances() {
-  const { data: exchangeState, isLoading, error } = useExchangeState();
+  const { data: exchangeState, isLoading, error } = useGetExchangeState();
 
   if (isLoading) {
     return (
@@ -42,17 +42,14 @@ export function WalletBalances() {
     );
   }
 
-  const balances = exchangeState?.balances || [];
   const supportedAssets = exchangeState?.supportedAssets || [];
+  const balancesMap = new Map(exchangeState?.balances || []);
 
-  // Create a map of balances
-  const balanceMap = new Map(balances.map(([symbol, balance]) => [symbol, balance]));
-
-  // Show all supported assets with zero balance if not present
-  const displayBalances = supportedAssets.map((asset) => {
-    const balance = balanceMap.get(asset.symbol);
+  const balances = supportedAssets.map((asset) => {
+    const balance = balancesMap.get(asset.symbol);
     return {
-      asset,
+      asset: asset.symbol,
+      name: asset.name,
       available: balance ? Number(balance.available) / Math.pow(10, Number(asset.decimals)) : 0,
     };
   });
@@ -64,40 +61,34 @@ export function WalletBalances() {
           <Wallet className="h-5 w-5" />
           Balances
         </CardTitle>
-        <CardDescription>Your available cryptocurrency balances</CardDescription>
+        <CardDescription>Your cryptocurrency holdings</CardDescription>
       </CardHeader>
       <CardContent>
-        {displayBalances.length === 0 ? (
-          <Alert>
-            <AlertDescription>No assets available</AlertDescription>
-          </Alert>
-        ) : (
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Asset</TableHead>
-                  <TableHead className="text-right">Available Balance</TableHead>
+        <div className="rounded-md border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Asset</TableHead>
+                <TableHead className="text-right">Available</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {balances.map((balance) => (
+                <TableRow key={balance.asset}>
+                  <TableCell>
+                    <div>
+                      <div className="font-medium">{balance.asset}</div>
+                      <div className="text-sm text-muted-foreground">{balance.name}</div>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-right font-mono">
+                    {balance.available.toFixed(8)}
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {displayBalances.map(({ asset, available }) => (
-                  <TableRow key={asset.symbol}>
-                    <TableCell className="font-medium">
-                      <div>
-                        <div className="font-semibold">{asset.symbol}</div>
-                        <div className="text-sm text-muted-foreground">{asset.name}</div>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right font-mono">
-                      {available.toFixed(Number(asset.decimals))} {asset.symbol}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        )}
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       </CardContent>
     </Card>
   );

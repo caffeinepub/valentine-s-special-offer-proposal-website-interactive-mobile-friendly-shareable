@@ -1,122 +1,116 @@
 import { useState } from 'react';
-import { useCreateWithdrawal, useExchangeState } from '../../hooks/useExchangeQueries';
+import { useRequestExchangeWithdrawal, useGetExchangeState } from '../../hooks/useExchangeQueries';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { getErrorMessage } from '../../utils/getErrorMessage';
 import { toast } from 'sonner';
-import { ArrowUpFromLine, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
+
+const SUPPORTED_ASSETS = [
+  { symbol: 'BTC', name: 'Bitcoin' },
+  { symbol: 'ETH', name: 'Ethereum' },
+  { symbol: 'USDT', name: 'Tether' },
+  { symbol: 'ICP', name: 'Internet Computer' },
+];
 
 export function WithdrawalForm() {
-  const [assetSymbol, setAssetSymbol] = useState('');
+  const [asset, setAsset] = useState('USDT');
   const [amount, setAmount] = useState('');
-  const [destinationAddress, setDestinationAddress] = useState('');
-  const { data: exchangeState } = useExchangeState();
-  const createWithdrawal = useCreateWithdrawal();
-
-  const supportedAssets = exchangeState?.supportedAssets || [];
-  const balances = exchangeState?.balances || [];
+  const [address, setAddress] = useState('');
+  const { data: exchangeState } = useGetExchangeState();
+  const requestWithdrawal = useRequestExchangeWithdrawal();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!assetSymbol || !amount || !destinationAddress) {
-      toast.error('Please fill in all fields');
-      return;
-    }
-
-    const numAmount = parseFloat(amount);
-    if (isNaN(numAmount) || numAmount <= 0) {
+    
+    const amountNum = parseFloat(amount);
+    if (isNaN(amountNum) || amountNum <= 0) {
       toast.error('Please enter a valid amount');
       return;
     }
 
-    const asset = supportedAssets.find((a) => a.symbol === assetSymbol);
-    if (!asset) {
-      toast.error('Invalid asset selected');
+    if (!address.trim()) {
+      toast.error('Please enter a destination address');
       return;
     }
 
     // Check balance
-    const balance = balances.find(([symbol]) => symbol === assetSymbol)?.[1];
-    const availableBalance = balance ? Number(balance.available) / Math.pow(10, Number(asset.decimals)) : 0;
-
-    if (numAmount > availableBalance) {
-      toast.error(`Insufficient balance. Available: ${availableBalance} ${assetSymbol}`);
-      return;
+    const balancesMap = new Map(exchangeState?.balances || []);
+    const balance = balancesMap.get(asset);
+    const assetInfo = exchangeState?.supportedAssets.find(a => a.symbol === asset);
+    
+    if (balance && assetInfo) {
+      const availableBalance = Number(balance.available) / Math.pow(10, Number(assetInfo.decimals));
+      if (amountNum > availableBalance) {
+        toast.error('Insufficient balance');
+        return;
+      }
     }
 
-    const amountInSmallestUnit = BigInt(Math.floor(numAmount * Math.pow(10, Number(asset.decimals))));
-
-    createWithdrawal.mutate(
-      { assetSymbol, amount: amountInSmallestUnit, destinationAddress },
-      {
-        onSuccess: (withdrawal) => {
-          toast.success(`Withdrawal request created and is pending admin review. Reference: ${withdrawal.id}`);
-          setAmount('');
-          setDestinationAddress('');
-        },
-        onError: (error: any) => {
-          toast.error(error.message || 'Failed to create withdrawal');
-        },
-      }
-    );
+    try {
+      await requestWithdrawal.mutateAsync({
+        assetSymbol: asset,
+        amount: Math.floor(amountNum * 100),
+        destinationAddress: address.trim(),
+      });
+      toast.success('Withdrawal request submitted! Awaiting admin processing.');
+      setAmount('');
+      setAddress('');
+    } catch (error) {
+      toast.error(getErrorMessage(error));
+    }
   };
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <ArrowUpFromLine className="h-5 w-5" />
-          Withdrawal
-        </CardTitle>
-        <CardDescription>Create a withdrawal request for admin processing</CardDescription>
+        <CardTitle>Request Withdrawal</CardTitle>
+        <CardDescription>Submit a withdrawal request for admin processing</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="withdrawal-asset">Asset</Label>
-            <Select value={assetSymbol} onValueChange={setAssetSymbol}>
+            <Select value={asset} onValueChange={setAsset}>
               <SelectTrigger id="withdrawal-asset">
-                <SelectValue placeholder="Select asset" />
+                <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {supportedAssets.map((asset) => (
-                  <SelectItem key={asset.symbol} value={asset.symbol}>
-                    {asset.symbol} - {asset.name}
+                {SUPPORTED_ASSETS.map(a => (
+                  <SelectItem key={a.symbol} value={a.symbol}>
+                    {a.name} ({a.symbol})
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
-
           <div className="space-y-2">
             <Label htmlFor="withdrawal-amount">Amount</Label>
             <Input
               id="withdrawal-amount"
               type="number"
-              step="any"
               placeholder="0.00"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
+              min="0"
+              step="0.01"
             />
           </div>
-
           <div className="space-y-2">
-            <Label htmlFor="destination-address">Destination Address</Label>
+            <Label htmlFor="withdrawal-address">Destination Address</Label>
             <Input
-              id="destination-address"
-              type="text"
+              id="withdrawal-address"
               placeholder="Enter wallet address"
-              value={destinationAddress}
-              onChange={(e) => setDestinationAddress(e.target.value)}
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
             />
           </div>
-
-          <Button type="submit" className="w-full" disabled={createWithdrawal.isPending}>
-            {createWithdrawal.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Request Withdrawal
+          <Button type="submit" className="w-full" disabled={requestWithdrawal.isPending}>
+            {requestWithdrawal.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Submit Withdrawal Request
           </Button>
         </form>
       </CardContent>

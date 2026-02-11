@@ -1,25 +1,24 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useActor } from './useActor';
-import type { ExchangeState, Deposit, Withdrawal, Trade, Variant_buy_sell, DepositAddresses } from '../backend';
+import type { Variant_buy_sell } from '../backend';
 
-export function useExchangeState() {
+export function useGetExchangeState() {
   const { actor, isFetching: actorFetching } = useActor();
 
-  return useQuery<ExchangeState>({
+  return useQuery({
     queryKey: ['exchangeState'],
     queryFn: async () => {
       if (!actor) throw new Error('Actor not available');
       return actor.getExchangeStateShared();
     },
     enabled: !!actor && !actorFetching,
-    refetchInterval: 5000, // Refetch every 5 seconds for real-time updates
   });
 }
 
 export function useGetUsdtDepositAddresses() {
   const { actor, isFetching: actorFetching } = useActor();
 
-  return useQuery<DepositAddresses>({
+  return useQuery({
     queryKey: ['usdtDepositAddresses'],
     queryFn: async () => {
       if (!actor) throw new Error('Actor not available');
@@ -34,7 +33,7 @@ export function useSetUsdtDepositAddresses() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (addresses: DepositAddresses) => {
+    mutationFn: async (addresses: { trc20Address: string; erc20Address: string }) => {
       if (!actor) throw new Error('Actor not available');
       return actor.setUsdtDepositAddresses(addresses);
     },
@@ -44,14 +43,14 @@ export function useSetUsdtDepositAddresses() {
   });
 }
 
-export function useCreateDeposit() {
+export function useRequestExchangeDeposit() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ assetSymbol, amount }: { assetSymbol: string; amount: bigint }) => {
+    mutationFn: async (params: { assetSymbol: string; amount: number }) => {
       if (!actor) throw new Error('Actor not available');
-      return actor.requestDeposit(assetSymbol, amount);
+      return actor.requestDeposit(params.assetSymbol, BigInt(params.amount), null);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['exchangeState'] });
@@ -59,22 +58,14 @@ export function useCreateDeposit() {
   });
 }
 
-export function useCreateWithdrawal() {
+export function useRequestExchangeWithdrawal() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({
-      assetSymbol,
-      amount,
-      destinationAddress,
-    }: {
-      assetSymbol: string;
-      amount: bigint;
-      destinationAddress: string;
-    }) => {
+    mutationFn: async (params: { assetSymbol: string; amount: number; destinationAddress: string }) => {
       if (!actor) throw new Error('Actor not available');
-      return actor.requestWithdrawal(assetSymbol, amount, destinationAddress);
+      return actor.requestWithdrawal(params.assetSymbol, BigInt(params.amount), params.destinationAddress);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['exchangeState'] });
@@ -82,59 +73,83 @@ export function useCreateWithdrawal() {
   });
 }
 
-export function useMarkDepositCompleted() {
+export function useTrade() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ user, depositId, txId }: { user: string; depositId: string; txId: string }) => {
-      if (!actor) throw new Error('Actor not available');
-      const principal = { __principal__: user } as any;
-      return actor.markDepositCompleted(principal, depositId, txId);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['exchangeState'] });
-    },
-  });
-}
-
-export function useMarkWithdrawalCompleted() {
-  const { actor } = useActor();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async ({ user, withdrawalId }: { user: string; withdrawalId: string }) => {
-      if (!actor) throw new Error('Actor not available');
-      const principal = { __principal__: user } as any;
-      return actor.markWithdrawalCompleted(principal, withdrawalId);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['exchangeState'] });
-    },
-  });
-}
-
-export function usePlaceTrade() {
-  const { actor } = useActor();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async ({
-      tradeType,
-      inputAssetSymbol,
-      outputAssetSymbol,
-      amount,
-    }: {
+    mutationFn: async (params: {
       tradeType: Variant_buy_sell;
       inputAssetSymbol: string;
       outputAssetSymbol: string;
-      amount: bigint;
+      amount: number;
     }) => {
       if (!actor) throw new Error('Actor not available');
-      return actor.trade(tradeType, inputAssetSymbol, outputAssetSymbol, amount);
+      return actor.trade(
+        params.tradeType,
+        params.inputAssetSymbol,
+        params.outputAssetSymbol,
+        BigInt(params.amount)
+      );
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['exchangeState'] });
+    },
+  });
+}
+
+export function useGetPendingExchangeDeposits() {
+  const { actor, isFetching: actorFetching } = useActor();
+
+  return useQuery({
+    queryKey: ['pendingExchangeDeposits'],
+    queryFn: async () => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.getAllPendingDeposits();
+    },
+    enabled: !!actor && !actorFetching,
+  });
+}
+
+export function useGetPendingExchangeWithdrawals() {
+  const { actor, isFetching: actorFetching } = useActor();
+
+  return useQuery({
+    queryKey: ['pendingExchangeWithdrawals'],
+    queryFn: async () => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.getAllPendingWithdrawals();
+    },
+    enabled: !!actor && !actorFetching,
+  });
+}
+
+export function useMarkExchangeDepositCompleted() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (params: { user: any; depositId: string; txId: string }) => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.markDepositCompleted(params.user, params.depositId, params.txId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['pendingExchangeDeposits'] });
+    },
+  });
+}
+
+export function useMarkExchangeWithdrawalCompleted() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (params: { user: any; withdrawalId: string }) => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.markWithdrawalCompleted(params.user, params.withdrawalId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['pendingExchangeWithdrawals'] });
     },
   });
 }

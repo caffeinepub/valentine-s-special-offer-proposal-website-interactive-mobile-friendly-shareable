@@ -11,7 +11,7 @@ export interface Deposit {
     id: string;
     status: string;
     asset: SupportedAsset;
-    txId: string;
+    txId?: string;
     timestamp: Time;
     amount: bigint;
 }
@@ -107,6 +107,13 @@ export interface MiningEvent {
     details?: string;
     eventType: string;
 }
+export interface VIPCatalogItem {
+    id: string;
+    rewardAmount: bigint;
+    description: string;
+    dailyLimit: bigint;
+    taskType: TaskType;
+}
 export interface MiningConfig {
     bitcoinPayoutAddress: string;
     targetHashrate: bigint;
@@ -133,6 +140,10 @@ export interface UserProfile {
 export interface ProposalResponse {
     note?: string;
     accepted: boolean;
+}
+export enum TaskType {
+    ad = "ad",
+    task = "task"
 }
 export enum UserRole {
     admin = "admin",
@@ -163,6 +174,7 @@ export interface backendInterface {
     approveEarningClaim(claimId: string, adminMessage: string | null): Promise<void>;
     approveVIPUpgrade(user: Principal, adminMessage: string | null): Promise<void>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
+    claimOwnership(): Promise<void>;
     completePayout(user: Principal, _payoutIndex: bigint): Promise<void>;
     createEarningItem(name: string, description: string, rewardAmount: bigint, conditionText: string, externalId: string | null): Promise<EarningItem>;
     generateInviteCode(): Promise<string>;
@@ -172,6 +184,7 @@ export interface backendInterface {
     getAllPendingVIPUpgrades(): Promise<Array<[Principal, VIPStatus]>>;
     getAllPendingWithdrawals(): Promise<Array<[Principal, Withdrawal]>>;
     getAllRSVPs(): Promise<Array<RSVP>>;
+    getAvailableEarnItems(): Promise<Array<VIPCatalogItem>>;
     getCallerEarningClaims(): Promise<Array<EarningClaim>>;
     getCallerResponse(): Promise<ProposalResponse | null>;
     getCallerUserProfile(): Promise<UserProfile | null>;
@@ -183,6 +196,7 @@ export interface backendInterface {
     getMiningConfig(): Promise<MiningConfig | null>;
     getMiningEvents(): Promise<Array<MiningEvent>>;
     getMiningState(): Promise<MiningState | null>;
+    getOwner(): Promise<Principal | null>;
     getPayoutHistory(): Promise<Array<Payout>>;
     getResponse(user: Principal): Promise<ProposalResponse | null>;
     getSupportedAssets(): Promise<Array<SupportedAsset>>;
@@ -195,7 +209,7 @@ export interface backendInterface {
     markWithdrawalCompleted(user: Principal, withdrawalId: string): Promise<void>;
     rejectEarningClaim(claimId: string, adminMessage: string | null): Promise<void>;
     rejectVIPUpgrade(user: Principal, adminMessage: string | null): Promise<void>;
-    requestDeposit(assetSymbol: string, amount: bigint): Promise<Deposit>;
+    requestDeposit(assetSymbol: string, amount: bigint, txId: string | null): Promise<Deposit>;
     requestPayout(amount: bigint): Promise<void>;
     requestVIPUpgrade(tierTo: Variant_bronze_gold_diamond_basic_silver): Promise<void>;
     requestWithdrawal(assetSymbol: string, amount: bigint, destinationAddress: string): Promise<Withdrawal>;

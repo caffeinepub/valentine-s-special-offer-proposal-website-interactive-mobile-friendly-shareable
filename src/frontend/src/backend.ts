@@ -93,7 +93,7 @@ export interface Deposit {
     id: string;
     status: string;
     asset: SupportedAsset;
-    txId: string;
+    txId?: string;
     timestamp: Time;
     amount: bigint;
 }
@@ -189,6 +189,13 @@ export interface MiningEvent {
     details?: string;
     eventType: string;
 }
+export interface VIPCatalogItem {
+    id: string;
+    rewardAmount: bigint;
+    description: string;
+    dailyLimit: bigint;
+    taskType: TaskType;
+}
 export interface MiningConfig {
     bitcoinPayoutAddress: string;
     targetHashrate: bigint;
@@ -215,6 +222,10 @@ export interface UserProfile {
 export interface ProposalResponse {
     note?: string;
     accepted: boolean;
+}
+export enum TaskType {
+    ad = "ad",
+    task = "task"
 }
 export enum UserRole {
     admin = "admin",
@@ -246,6 +257,7 @@ export interface backendInterface {
     approveEarningClaim(claimId: string, adminMessage: string | null): Promise<void>;
     approveVIPUpgrade(user: Principal, adminMessage: string | null): Promise<void>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
+    claimOwnership(): Promise<void>;
     completePayout(user: Principal, _payoutIndex: bigint): Promise<void>;
     createEarningItem(name: string, description: string, rewardAmount: bigint, conditionText: string, externalId: string | null): Promise<EarningItem>;
     generateInviteCode(): Promise<string>;
@@ -255,6 +267,7 @@ export interface backendInterface {
     getAllPendingVIPUpgrades(): Promise<Array<[Principal, VIPStatus]>>;
     getAllPendingWithdrawals(): Promise<Array<[Principal, Withdrawal]>>;
     getAllRSVPs(): Promise<Array<RSVP>>;
+    getAvailableEarnItems(): Promise<Array<VIPCatalogItem>>;
     getCallerEarningClaims(): Promise<Array<EarningClaim>>;
     getCallerResponse(): Promise<ProposalResponse | null>;
     getCallerUserProfile(): Promise<UserProfile | null>;
@@ -266,6 +279,7 @@ export interface backendInterface {
     getMiningConfig(): Promise<MiningConfig | null>;
     getMiningEvents(): Promise<Array<MiningEvent>>;
     getMiningState(): Promise<MiningState | null>;
+    getOwner(): Promise<Principal | null>;
     getPayoutHistory(): Promise<Array<Payout>>;
     getResponse(user: Principal): Promise<ProposalResponse | null>;
     getSupportedAssets(): Promise<Array<SupportedAsset>>;
@@ -278,7 +292,7 @@ export interface backendInterface {
     markWithdrawalCompleted(user: Principal, withdrawalId: string): Promise<void>;
     rejectEarningClaim(claimId: string, adminMessage: string | null): Promise<void>;
     rejectVIPUpgrade(user: Principal, adminMessage: string | null): Promise<void>;
-    requestDeposit(assetSymbol: string, amount: bigint): Promise<Deposit>;
+    requestDeposit(assetSymbol: string, amount: bigint, txId: string | null): Promise<Deposit>;
     requestPayout(amount: bigint): Promise<void>;
     requestVIPUpgrade(tierTo: Variant_bronze_gold_diamond_basic_silver): Promise<void>;
     requestWithdrawal(assetSymbol: string, amount: bigint, destinationAddress: string): Promise<Withdrawal>;
@@ -293,7 +307,7 @@ export interface backendInterface {
     updateEarningItem(itemId: string, name: string, description: string, rewardAmount: bigint, conditionText: string, status: Variant_active_disabled): Promise<EarningItem>;
     updateMiningConfig(config: MiningConfig): Promise<void>;
 }
-import type { Balance as _Balance, Deposit as _Deposit, EarningClaim as _EarningClaim, EarningItem as _EarningItem, ExchangeState as _ExchangeState, MiningConfig as _MiningConfig, MiningEvent as _MiningEvent, MiningState as _MiningState, ProposalResponse as _ProposalResponse, SupportedAsset as _SupportedAsset, Time as _Time, Trade as _Trade, UserProfile as _UserProfile, UserRole as _UserRole, VIPStatus as _VIPStatus, Withdrawal as _Withdrawal } from "./declarations/backend.did.d.ts";
+import type { Balance as _Balance, Deposit as _Deposit, EarningClaim as _EarningClaim, EarningItem as _EarningItem, ExchangeState as _ExchangeState, MiningConfig as _MiningConfig, MiningEvent as _MiningEvent, MiningState as _MiningState, ProposalResponse as _ProposalResponse, SupportedAsset as _SupportedAsset, TaskType as _TaskType, Time as _Time, Trade as _Trade, UserProfile as _UserProfile, UserRole as _UserRole, VIPCatalogItem as _VIPCatalogItem, VIPStatus as _VIPStatus, Withdrawal as _Withdrawal } from "./declarations/backend.did.d.ts";
 export class Backend implements backendInterface {
     constructor(private actor: ActorSubclass<_SERVICE>, private _uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, private _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, private processError?: (error: unknown) => never){}
     async _initializeAccessControlWithSecret(arg0: string): Promise<void> {
@@ -349,6 +363,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.assignCallerUserRole(arg0, to_candid_UserRole_n2(this._uploadFile, this._downloadFile, arg1));
+            return result;
+        }
+    }
+    async claimOwnership(): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.claimOwnership();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.claimOwnership();
             return result;
         }
     }
@@ -412,42 +440,42 @@ export class Backend implements backendInterface {
         if (this.processError) {
             try {
                 const result = await this.actor.getAllPendingDeposits();
-                return result;
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.getAllPendingDeposits();
-            return result;
-        }
-    }
-    async getAllPendingEarningClaims(): Promise<Array<EarningClaim>> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.getAllPendingEarningClaims();
                 return from_candid_vec_n10(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.getAllPendingEarningClaims();
+            const result = await this.actor.getAllPendingDeposits();
             return from_candid_vec_n10(this._uploadFile, this._downloadFile, result);
         }
     }
-    async getAllPendingVIPUpgrades(): Promise<Array<[Principal, VIPStatus]>> {
+    async getAllPendingEarningClaims(): Promise<Array<EarningClaim>> {
         if (this.processError) {
             try {
-                const result = await this.actor.getAllPendingVIPUpgrades();
+                const result = await this.actor.getAllPendingEarningClaims();
                 return from_candid_vec_n14(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.getAllPendingVIPUpgrades();
+            const result = await this.actor.getAllPendingEarningClaims();
             return from_candid_vec_n14(this._uploadFile, this._downloadFile, result);
+        }
+    }
+    async getAllPendingVIPUpgrades(): Promise<Array<[Principal, VIPStatus]>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getAllPendingVIPUpgrades();
+                return from_candid_vec_n18(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getAllPendingVIPUpgrades();
+            return from_candid_vec_n18(this._uploadFile, this._downloadFile, result);
         }
     }
     async getAllPendingWithdrawals(): Promise<Array<[Principal, Withdrawal]>> {
@@ -478,102 +506,116 @@ export class Backend implements backendInterface {
             return result;
         }
     }
+    async getAvailableEarnItems(): Promise<Array<VIPCatalogItem>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getAvailableEarnItems();
+                return from_candid_vec_n25(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getAvailableEarnItems();
+            return from_candid_vec_n25(this._uploadFile, this._downloadFile, result);
+        }
+    }
     async getCallerEarningClaims(): Promise<Array<EarningClaim>> {
         if (this.processError) {
             try {
                 const result = await this.actor.getCallerEarningClaims();
-                return from_candid_vec_n10(this._uploadFile, this._downloadFile, result);
+                return from_candid_vec_n14(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getCallerEarningClaims();
-            return from_candid_vec_n10(this._uploadFile, this._downloadFile, result);
+            return from_candid_vec_n14(this._uploadFile, this._downloadFile, result);
         }
     }
     async getCallerResponse(): Promise<ProposalResponse | null> {
         if (this.processError) {
             try {
                 const result = await this.actor.getCallerResponse();
-                return from_candid_opt_n21(this._uploadFile, this._downloadFile, result);
+                return from_candid_opt_n30(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getCallerResponse();
-            return from_candid_opt_n21(this._uploadFile, this._downloadFile, result);
+            return from_candid_opt_n30(this._uploadFile, this._downloadFile, result);
         }
     }
     async getCallerUserProfile(): Promise<UserProfile | null> {
         if (this.processError) {
             try {
                 const result = await this.actor.getCallerUserProfile();
-                return from_candid_opt_n24(this._uploadFile, this._downloadFile, result);
+                return from_candid_opt_n33(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getCallerUserProfile();
-            return from_candid_opt_n24(this._uploadFile, this._downloadFile, result);
+            return from_candid_opt_n33(this._uploadFile, this._downloadFile, result);
         }
     }
     async getCallerUserRole(): Promise<UserRole> {
         if (this.processError) {
             try {
                 const result = await this.actor.getCallerUserRole();
-                return from_candid_UserRole_n25(this._uploadFile, this._downloadFile, result);
+                return from_candid_UserRole_n34(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getCallerUserRole();
-            return from_candid_UserRole_n25(this._uploadFile, this._downloadFile, result);
+            return from_candid_UserRole_n34(this._uploadFile, this._downloadFile, result);
         }
     }
     async getCallerVIPStatus(): Promise<VIPStatus> {
         if (this.processError) {
             try {
                 const result = await this.actor.getCallerVIPStatus();
-                return from_candid_VIPStatus_n16(this._uploadFile, this._downloadFile, result);
+                return from_candid_VIPStatus_n20(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getCallerVIPStatus();
-            return from_candid_VIPStatus_n16(this._uploadFile, this._downloadFile, result);
+            return from_candid_VIPStatus_n20(this._uploadFile, this._downloadFile, result);
         }
     }
     async getEarningItem(arg0: string): Promise<EarningItem | null> {
         if (this.processError) {
             try {
                 const result = await this.actor.getEarningItem(arg0);
-                return from_candid_opt_n27(this._uploadFile, this._downloadFile, result);
+                return from_candid_opt_n36(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getEarningItem(arg0);
-            return from_candid_opt_n27(this._uploadFile, this._downloadFile, result);
+            return from_candid_opt_n36(this._uploadFile, this._downloadFile, result);
         }
     }
     async getExchangeStateShared(): Promise<ExchangeState> {
         if (this.processError) {
             try {
                 const result = await this.actor.getExchangeStateShared();
-                return from_candid_ExchangeState_n28(this._uploadFile, this._downloadFile, result);
+                return from_candid_ExchangeState_n37(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getExchangeStateShared();
-            return from_candid_ExchangeState_n28(this._uploadFile, this._downloadFile, result);
+            return from_candid_ExchangeState_n37(this._uploadFile, this._downloadFile, result);
         }
     }
     async getInviteCodes(): Promise<Array<InviteCode>> {
@@ -594,42 +636,56 @@ export class Backend implements backendInterface {
         if (this.processError) {
             try {
                 const result = await this.actor.getMiningConfig();
-                return from_candid_opt_n35(this._uploadFile, this._downloadFile, result);
+                return from_candid_opt_n46(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getMiningConfig();
-            return from_candid_opt_n35(this._uploadFile, this._downloadFile, result);
+            return from_candid_opt_n46(this._uploadFile, this._downloadFile, result);
         }
     }
     async getMiningEvents(): Promise<Array<MiningEvent>> {
         if (this.processError) {
             try {
                 const result = await this.actor.getMiningEvents();
-                return from_candid_vec_n36(this._uploadFile, this._downloadFile, result);
+                return from_candid_vec_n47(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getMiningEvents();
-            return from_candid_vec_n36(this._uploadFile, this._downloadFile, result);
+            return from_candid_vec_n47(this._uploadFile, this._downloadFile, result);
         }
     }
     async getMiningState(): Promise<MiningState | null> {
         if (this.processError) {
             try {
                 const result = await this.actor.getMiningState();
-                return from_candid_opt_n39(this._uploadFile, this._downloadFile, result);
+                return from_candid_opt_n50(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getMiningState();
-            return from_candid_opt_n39(this._uploadFile, this._downloadFile, result);
+            return from_candid_opt_n50(this._uploadFile, this._downloadFile, result);
+        }
+    }
+    async getOwner(): Promise<Principal | null> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getOwner();
+                return from_candid_opt_n54(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getOwner();
+            return from_candid_opt_n54(this._uploadFile, this._downloadFile, result);
         }
     }
     async getPayoutHistory(): Promise<Array<Payout>> {
@@ -650,14 +706,14 @@ export class Backend implements backendInterface {
         if (this.processError) {
             try {
                 const result = await this.actor.getResponse(arg0);
-                return from_candid_opt_n21(this._uploadFile, this._downloadFile, result);
+                return from_candid_opt_n30(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getResponse(arg0);
-            return from_candid_opt_n21(this._uploadFile, this._downloadFile, result);
+            return from_candid_opt_n30(this._uploadFile, this._downloadFile, result);
         }
     }
     async getSupportedAssets(): Promise<Array<SupportedAsset>> {
@@ -706,14 +762,14 @@ export class Backend implements backendInterface {
         if (this.processError) {
             try {
                 const result = await this.actor.getUserProfile(arg0);
-                return from_candid_opt_n24(this._uploadFile, this._downloadFile, result);
+                return from_candid_opt_n33(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getUserProfile(arg0);
-            return from_candid_opt_n24(this._uploadFile, this._downloadFile, result);
+            return from_candid_opt_n33(this._uploadFile, this._downloadFile, result);
         }
     }
     async getcallerEarningClaimsCount(): Promise<bigint> {
@@ -800,18 +856,18 @@ export class Backend implements backendInterface {
             return result;
         }
     }
-    async requestDeposit(arg0: string, arg1: bigint): Promise<Deposit> {
+    async requestDeposit(arg0: string, arg1: bigint, arg2: string | null): Promise<Deposit> {
         if (this.processError) {
             try {
-                const result = await this.actor.requestDeposit(arg0, arg1);
-                return result;
+                const result = await this.actor.requestDeposit(arg0, arg1, to_candid_opt_n1(this._uploadFile, this._downloadFile, arg2));
+                return from_candid_Deposit_n12(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.requestDeposit(arg0, arg1);
-            return result;
+            const result = await this.actor.requestDeposit(arg0, arg1, to_candid_opt_n1(this._uploadFile, this._downloadFile, arg2));
+            return from_candid_Deposit_n12(this._uploadFile, this._downloadFile, result);
         }
     }
     async requestPayout(arg0: bigint): Promise<void> {
@@ -831,14 +887,14 @@ export class Backend implements backendInterface {
     async requestVIPUpgrade(arg0: Variant_bronze_gold_diamond_basic_silver): Promise<void> {
         if (this.processError) {
             try {
-                const result = await this.actor.requestVIPUpgrade(to_candid_variant_n43(this._uploadFile, this._downloadFile, arg0));
+                const result = await this.actor.requestVIPUpgrade(to_candid_variant_n55(this._uploadFile, this._downloadFile, arg0));
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.requestVIPUpgrade(to_candid_variant_n43(this._uploadFile, this._downloadFile, arg0));
+            const result = await this.actor.requestVIPUpgrade(to_candid_variant_n55(this._uploadFile, this._downloadFile, arg0));
             return result;
         }
     }
@@ -916,14 +972,14 @@ export class Backend implements backendInterface {
         if (this.processError) {
             try {
                 const result = await this.actor.submitEarningClaim(arg0, arg1, arg2, to_candid_opt_n1(this._uploadFile, this._downloadFile, arg3));
-                return from_candid_EarningClaim_n11(this._uploadFile, this._downloadFile, result);
+                return from_candid_EarningClaim_n15(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.submitEarningClaim(arg0, arg1, arg2, to_candid_opt_n1(this._uploadFile, this._downloadFile, arg3));
-            return from_candid_EarningClaim_n11(this._uploadFile, this._downloadFile, result);
+            return from_candid_EarningClaim_n15(this._uploadFile, this._downloadFile, result);
         }
     }
     async submitRSVP(arg0: string, arg1: boolean, arg2: string): Promise<void> {
@@ -957,28 +1013,28 @@ export class Backend implements backendInterface {
     async trade(arg0: Variant_buy_sell, arg1: string, arg2: string, arg3: bigint): Promise<Trade> {
         if (this.processError) {
             try {
-                const result = await this.actor.trade(to_candid_variant_n44(this._uploadFile, this._downloadFile, arg0), arg1, arg2, arg3);
-                return from_candid_Trade_n32(this._uploadFile, this._downloadFile, result);
+                const result = await this.actor.trade(to_candid_variant_n56(this._uploadFile, this._downloadFile, arg0), arg1, arg2, arg3);
+                return from_candid_Trade_n41(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.trade(to_candid_variant_n44(this._uploadFile, this._downloadFile, arg0), arg1, arg2, arg3);
-            return from_candid_Trade_n32(this._uploadFile, this._downloadFile, result);
+            const result = await this.actor.trade(to_candid_variant_n56(this._uploadFile, this._downloadFile, arg0), arg1, arg2, arg3);
+            return from_candid_Trade_n41(this._uploadFile, this._downloadFile, result);
         }
     }
     async updateEarningItem(arg0: string, arg1: string, arg2: string, arg3: bigint, arg4: string, arg5: Variant_active_disabled): Promise<EarningItem> {
         if (this.processError) {
             try {
-                const result = await this.actor.updateEarningItem(arg0, arg1, arg2, arg3, arg4, to_candid_variant_n45(this._uploadFile, this._downloadFile, arg5));
+                const result = await this.actor.updateEarningItem(arg0, arg1, arg2, arg3, arg4, to_candid_variant_n57(this._uploadFile, this._downloadFile, arg5));
                 return from_candid_EarningItem_n4(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.updateEarningItem(arg0, arg1, arg2, arg3, arg4, to_candid_variant_n45(this._uploadFile, this._downloadFile, arg5));
+            const result = await this.actor.updateEarningItem(arg0, arg1, arg2, arg3, arg4, to_candid_variant_n57(this._uploadFile, this._downloadFile, arg5));
             return from_candid_EarningItem_n4(this._uploadFile, this._downloadFile, result);
         }
     }
@@ -997,34 +1053,43 @@ export class Backend implements backendInterface {
         }
     }
 }
-function from_candid_EarningClaim_n11(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _EarningClaim): EarningClaim {
-    return from_candid_record_n12(_uploadFile, _downloadFile, value);
+function from_candid_Deposit_n12(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _Deposit): Deposit {
+    return from_candid_record_n13(_uploadFile, _downloadFile, value);
+}
+function from_candid_EarningClaim_n15(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _EarningClaim): EarningClaim {
+    return from_candid_record_n16(_uploadFile, _downloadFile, value);
 }
 function from_candid_EarningItem_n4(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _EarningItem): EarningItem {
     return from_candid_record_n5(_uploadFile, _downloadFile, value);
 }
-function from_candid_ExchangeState_n28(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _ExchangeState): ExchangeState {
-    return from_candid_record_n29(_uploadFile, _downloadFile, value);
-}
-function from_candid_MiningEvent_n37(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _MiningEvent): MiningEvent {
+function from_candid_ExchangeState_n37(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _ExchangeState): ExchangeState {
     return from_candid_record_n38(_uploadFile, _downloadFile, value);
 }
-function from_candid_MiningState_n40(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _MiningState): MiningState {
-    return from_candid_record_n41(_uploadFile, _downloadFile, value);
+function from_candid_MiningEvent_n48(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _MiningEvent): MiningEvent {
+    return from_candid_record_n49(_uploadFile, _downloadFile, value);
 }
-function from_candid_ProposalResponse_n22(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _ProposalResponse): ProposalResponse {
-    return from_candid_record_n23(_uploadFile, _downloadFile, value);
+function from_candid_MiningState_n51(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _MiningState): MiningState {
+    return from_candid_record_n52(_uploadFile, _downloadFile, value);
 }
-function from_candid_Trade_n32(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _Trade): Trade {
-    return from_candid_record_n33(_uploadFile, _downloadFile, value);
+function from_candid_ProposalResponse_n31(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _ProposalResponse): ProposalResponse {
+    return from_candid_record_n32(_uploadFile, _downloadFile, value);
 }
-function from_candid_UserRole_n25(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _UserRole): UserRole {
-    return from_candid_variant_n26(_uploadFile, _downloadFile, value);
+function from_candid_TaskType_n28(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _TaskType): TaskType {
+    return from_candid_variant_n29(_uploadFile, _downloadFile, value);
 }
-function from_candid_VIPStatus_n16(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _VIPStatus): VIPStatus {
-    return from_candid_record_n17(_uploadFile, _downloadFile, value);
+function from_candid_Trade_n41(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _Trade): Trade {
+    return from_candid_record_n42(_uploadFile, _downloadFile, value);
 }
-function from_candid_opt_n18(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [{
+function from_candid_UserRole_n34(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _UserRole): UserRole {
+    return from_candid_variant_n35(_uploadFile, _downloadFile, value);
+}
+function from_candid_VIPCatalogItem_n26(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _VIPCatalogItem): VIPCatalogItem {
+    return from_candid_record_n27(_uploadFile, _downloadFile, value);
+}
+function from_candid_VIPStatus_n20(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _VIPStatus): VIPStatus {
+    return from_candid_record_n21(_uploadFile, _downloadFile, value);
+}
+function from_candid_opt_n22(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [{
         status: {
             pending: null;
         } | {
@@ -1051,30 +1116,57 @@ function from_candid_opt_n18(_uploadFile: (file: ExternalBlob) => Promise<Uint8A
     adminMessage?: string;
     requestedAt: Time;
 } | null {
-    return value.length === 0 ? null : from_candid_record_n19(_uploadFile, _downloadFile, value[0]);
+    return value.length === 0 ? null : from_candid_record_n23(_uploadFile, _downloadFile, value[0]);
 }
-function from_candid_opt_n21(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_ProposalResponse]): ProposalResponse | null {
-    return value.length === 0 ? null : from_candid_ProposalResponse_n22(_uploadFile, _downloadFile, value[0]);
+function from_candid_opt_n30(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_ProposalResponse]): ProposalResponse | null {
+    return value.length === 0 ? null : from_candid_ProposalResponse_n31(_uploadFile, _downloadFile, value[0]);
 }
-function from_candid_opt_n24(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_UserProfile]): UserProfile | null {
+function from_candid_opt_n33(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_UserProfile]): UserProfile | null {
     return value.length === 0 ? null : value[0];
 }
-function from_candid_opt_n27(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_EarningItem]): EarningItem | null {
+function from_candid_opt_n36(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_EarningItem]): EarningItem | null {
     return value.length === 0 ? null : from_candid_EarningItem_n4(_uploadFile, _downloadFile, value[0]);
 }
-function from_candid_opt_n35(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_MiningConfig]): MiningConfig | null {
+function from_candid_opt_n46(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_MiningConfig]): MiningConfig | null {
     return value.length === 0 ? null : value[0];
 }
-function from_candid_opt_n39(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_MiningState]): MiningState | null {
-    return value.length === 0 ? null : from_candid_MiningState_n40(_uploadFile, _downloadFile, value[0]);
+function from_candid_opt_n50(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_MiningState]): MiningState | null {
+    return value.length === 0 ? null : from_candid_MiningState_n51(_uploadFile, _downloadFile, value[0]);
 }
-function from_candid_opt_n42(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_Time]): Time | null {
+function from_candid_opt_n53(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_Time]): Time | null {
+    return value.length === 0 ? null : value[0];
+}
+function from_candid_opt_n54(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [Principal]): Principal | null {
     return value.length === 0 ? null : value[0];
 }
 function from_candid_opt_n7(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [string]): string | null {
     return value.length === 0 ? null : value[0];
 }
-function from_candid_record_n12(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function from_candid_record_n13(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    id: string;
+    status: string;
+    asset: _SupportedAsset;
+    txId: [] | [string];
+    timestamp: _Time;
+    amount: bigint;
+}): {
+    id: string;
+    status: string;
+    asset: SupportedAsset;
+    txId?: string;
+    timestamp: Time;
+    amount: bigint;
+} {
+    return {
+        id: value.id,
+        status: value.status,
+        asset: value.asset,
+        txId: record_opt_to_undefined(from_candid_opt_n7(_uploadFile, _downloadFile, value.txId)),
+        timestamp: value.timestamp,
+        amount: value.amount
+    };
+}
+function from_candid_record_n16(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     id: string;
     status: {
         pending: null;
@@ -1111,7 +1203,7 @@ function from_candid_record_n12(_uploadFile: (file: ExternalBlob) => Promise<Uin
 } {
     return {
         id: value.id,
-        status: from_candid_variant_n13(_uploadFile, _downloadFile, value.status),
+        status: from_candid_variant_n17(_uploadFile, _downloadFile, value.status),
         itemId: value.itemId,
         created: value.created,
         rewardAmount: value.rewardAmount,
@@ -1122,7 +1214,7 @@ function from_candid_record_n12(_uploadFile: (file: ExternalBlob) => Promise<Uin
         adminMessage: record_opt_to_undefined(from_candid_opt_n7(_uploadFile, _downloadFile, value.adminMessage))
     };
 }
-function from_candid_record_n17(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function from_candid_record_n21(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     requestedUpgrade: [] | [{
             status: {
                 pending: null;
@@ -1166,11 +1258,11 @@ function from_candid_record_n17(_uploadFile: (file: ExternalBlob) => Promise<Uin
     tier: Variant_bronze_gold_diamond_basic_silver;
 } {
     return {
-        requestedUpgrade: record_opt_to_undefined(from_candid_opt_n18(_uploadFile, _downloadFile, value.requestedUpgrade)),
-        tier: from_candid_variant_n20(_uploadFile, _downloadFile, value.tier)
+        requestedUpgrade: record_opt_to_undefined(from_candid_opt_n22(_uploadFile, _downloadFile, value.requestedUpgrade)),
+        tier: from_candid_variant_n24(_uploadFile, _downloadFile, value.tier)
     };
 }
-function from_candid_record_n19(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function from_candid_record_n23(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     status: {
         pending: null;
     } | {
@@ -1198,13 +1290,34 @@ function from_candid_record_n19(_uploadFile: (file: ExternalBlob) => Promise<Uin
     requestedAt: Time;
 } {
     return {
-        status: from_candid_variant_n13(_uploadFile, _downloadFile, value.status),
-        tierTo: from_candid_variant_n20(_uploadFile, _downloadFile, value.tierTo),
+        status: from_candid_variant_n17(_uploadFile, _downloadFile, value.status),
+        tierTo: from_candid_variant_n24(_uploadFile, _downloadFile, value.tierTo),
         adminMessage: record_opt_to_undefined(from_candid_opt_n7(_uploadFile, _downloadFile, value.adminMessage)),
         requestedAt: value.requestedAt
     };
 }
-function from_candid_record_n23(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function from_candid_record_n27(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    id: string;
+    rewardAmount: bigint;
+    description: string;
+    dailyLimit: bigint;
+    taskType: _TaskType;
+}): {
+    id: string;
+    rewardAmount: bigint;
+    description: string;
+    dailyLimit: bigint;
+    taskType: TaskType;
+} {
+    return {
+        id: value.id,
+        rewardAmount: value.rewardAmount,
+        description: value.description,
+        dailyLimit: value.dailyLimit,
+        taskType: from_candid_TaskType_n28(_uploadFile, _downloadFile, value.taskType)
+    };
+}
+function from_candid_record_n32(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     note: [] | [string];
     accepted: boolean;
 }): {
@@ -1216,7 +1329,7 @@ function from_candid_record_n23(_uploadFile: (file: ExternalBlob) => Promise<Uin
         accepted: value.accepted
     };
 }
-function from_candid_record_n29(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function from_candid_record_n38(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     trades: Array<[string, _Trade]>;
     exchangeRates: Array<[string, number]>;
     withdrawals: Array<[string, _Withdrawal]>;
@@ -1232,15 +1345,15 @@ function from_candid_record_n29(_uploadFile: (file: ExternalBlob) => Promise<Uin
     balances: Array<[string, Balance]>;
 } {
     return {
-        trades: from_candid_vec_n30(_uploadFile, _downloadFile, value.trades),
+        trades: from_candid_vec_n39(_uploadFile, _downloadFile, value.trades),
         exchangeRates: value.exchangeRates,
         withdrawals: value.withdrawals,
         supportedAssets: value.supportedAssets,
-        deposits: value.deposits,
+        deposits: from_candid_vec_n44(_uploadFile, _downloadFile, value.deposits),
         balances: value.balances
     };
 }
-function from_candid_record_n33(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function from_candid_record_n42(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     id: string;
     status: string;
     rate: number;
@@ -1269,7 +1382,7 @@ function from_candid_record_n33(_uploadFile: (file: ExternalBlob) => Promise<Uin
         id: value.id,
         status: value.status,
         rate: value.rate,
-        type: from_candid_variant_n34(_uploadFile, _downloadFile, value.type),
+        type: from_candid_variant_n43(_uploadFile, _downloadFile, value.type),
         outputAsset: value.outputAsset,
         inputAsset: value.inputAsset,
         timestamp: value.timestamp,
@@ -1277,7 +1390,7 @@ function from_candid_record_n33(_uploadFile: (file: ExternalBlob) => Promise<Uin
         outputAmount: value.outputAmount
     };
 }
-function from_candid_record_n38(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function from_candid_record_n49(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     timestamp: _Time;
     details: [] | [string];
     eventType: string;
@@ -1290,27 +1403,6 @@ function from_candid_record_n38(_uploadFile: (file: ExternalBlob) => Promise<Uin
         timestamp: value.timestamp,
         details: record_opt_to_undefined(from_candid_opt_n7(_uploadFile, _downloadFile, value.details)),
         eventType: value.eventType
-    };
-}
-function from_candid_record_n41(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
-    cumulativeRuntime: bigint;
-    cumulativeEarnings: bigint;
-    isActive: boolean;
-    config: _MiningConfig;
-    lastStartTimestamp: [] | [_Time];
-}): {
-    cumulativeRuntime: bigint;
-    cumulativeEarnings: bigint;
-    isActive: boolean;
-    config: MiningConfig;
-    lastStartTimestamp?: Time;
-} {
-    return {
-        cumulativeRuntime: value.cumulativeRuntime,
-        cumulativeEarnings: value.cumulativeEarnings,
-        isActive: value.isActive,
-        config: value.config,
-        lastStartTimestamp: record_opt_to_undefined(from_candid_opt_n42(_uploadFile, _downloadFile, value.lastStartTimestamp))
     };
 }
 function from_candid_record_n5(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
@@ -1350,16 +1442,49 @@ function from_candid_record_n5(_uploadFile: (file: ExternalBlob) => Promise<Uint
         updated: value.updated
     };
 }
-function from_candid_tuple_n15(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [Principal, _VIPStatus]): [Principal, VIPStatus] {
+function from_candid_record_n52(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    cumulativeRuntime: bigint;
+    cumulativeEarnings: bigint;
+    isActive: boolean;
+    config: _MiningConfig;
+    lastStartTimestamp: [] | [_Time];
+}): {
+    cumulativeRuntime: bigint;
+    cumulativeEarnings: bigint;
+    isActive: boolean;
+    config: MiningConfig;
+    lastStartTimestamp?: Time;
+} {
+    return {
+        cumulativeRuntime: value.cumulativeRuntime,
+        cumulativeEarnings: value.cumulativeEarnings,
+        isActive: value.isActive,
+        config: value.config,
+        lastStartTimestamp: record_opt_to_undefined(from_candid_opt_n53(_uploadFile, _downloadFile, value.lastStartTimestamp))
+    };
+}
+function from_candid_tuple_n11(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [Principal, _Deposit]): [Principal, Deposit] {
     return [
         value[0],
-        from_candid_VIPStatus_n16(_uploadFile, _downloadFile, value[1])
+        from_candid_Deposit_n12(_uploadFile, _downloadFile, value[1])
     ];
 }
-function from_candid_tuple_n31(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [string, _Trade]): [string, Trade] {
+function from_candid_tuple_n19(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [Principal, _VIPStatus]): [Principal, VIPStatus] {
     return [
         value[0],
-        from_candid_Trade_n32(_uploadFile, _downloadFile, value[1])
+        from_candid_VIPStatus_n20(_uploadFile, _downloadFile, value[1])
+    ];
+}
+function from_candid_tuple_n40(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [string, _Trade]): [string, Trade] {
+    return [
+        value[0],
+        from_candid_Trade_n41(_uploadFile, _downloadFile, value[1])
+    ];
+}
+function from_candid_tuple_n45(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [string, _Deposit]): [string, Deposit] {
+    return [
+        value[0],
+        from_candid_Deposit_n12(_uploadFile, _downloadFile, value[1])
     ];
 }
 function from_candid_tuple_n9(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [string, _EarningItem]): [string, EarningItem] {
@@ -1368,7 +1493,7 @@ function from_candid_tuple_n9(_uploadFile: (file: ExternalBlob) => Promise<Uint8
         from_candid_EarningItem_n4(_uploadFile, _downloadFile, value[1])
     ];
 }
-function from_candid_variant_n13(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function from_candid_variant_n17(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     pending: null;
 } | {
     approved: null;
@@ -1377,7 +1502,7 @@ function from_candid_variant_n13(_uploadFile: (file: ExternalBlob) => Promise<Ui
 }): Variant_pending_approved_rejected {
     return "pending" in value ? Variant_pending_approved_rejected.pending : "approved" in value ? Variant_pending_approved_rejected.approved : "rejected" in value ? Variant_pending_approved_rejected.rejected : value;
 }
-function from_candid_variant_n20(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function from_candid_variant_n24(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     bronze: null;
 } | {
     gold: null;
@@ -1390,7 +1515,14 @@ function from_candid_variant_n20(_uploadFile: (file: ExternalBlob) => Promise<Ui
 }): Variant_bronze_gold_diamond_basic_silver {
     return "bronze" in value ? Variant_bronze_gold_diamond_basic_silver.bronze : "gold" in value ? Variant_bronze_gold_diamond_basic_silver.gold : "diamond" in value ? Variant_bronze_gold_diamond_basic_silver.diamond : "basic" in value ? Variant_bronze_gold_diamond_basic_silver.basic : "silver" in value ? Variant_bronze_gold_diamond_basic_silver.silver : value;
 }
-function from_candid_variant_n26(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function from_candid_variant_n29(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    ad: null;
+} | {
+    task: null;
+}): TaskType {
+    return "ad" in value ? TaskType.ad : "task" in value ? TaskType.task : value;
+}
+function from_candid_variant_n35(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     admin: null;
 } | {
     user: null;
@@ -1399,7 +1531,7 @@ function from_candid_variant_n26(_uploadFile: (file: ExternalBlob) => Promise<Ui
 }): UserRole {
     return "admin" in value ? UserRole.admin : "user" in value ? UserRole.user : "guest" in value ? UserRole.guest : value;
 }
-function from_candid_variant_n34(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function from_candid_variant_n43(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     buy: null;
 } | {
     sell: null;
@@ -1413,17 +1545,26 @@ function from_candid_variant_n6(_uploadFile: (file: ExternalBlob) => Promise<Uin
 }): Variant_active_disabled {
     return "active" in value ? Variant_active_disabled.active : "disabled" in value ? Variant_active_disabled.disabled : value;
 }
-function from_candid_vec_n10(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_EarningClaim>): Array<EarningClaim> {
-    return value.map((x)=>from_candid_EarningClaim_n11(_uploadFile, _downloadFile, x));
+function from_candid_vec_n10(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<[Principal, _Deposit]>): Array<[Principal, Deposit]> {
+    return value.map((x)=>from_candid_tuple_n11(_uploadFile, _downloadFile, x));
 }
-function from_candid_vec_n14(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<[Principal, _VIPStatus]>): Array<[Principal, VIPStatus]> {
-    return value.map((x)=>from_candid_tuple_n15(_uploadFile, _downloadFile, x));
+function from_candid_vec_n14(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_EarningClaim>): Array<EarningClaim> {
+    return value.map((x)=>from_candid_EarningClaim_n15(_uploadFile, _downloadFile, x));
 }
-function from_candid_vec_n30(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<[string, _Trade]>): Array<[string, Trade]> {
-    return value.map((x)=>from_candid_tuple_n31(_uploadFile, _downloadFile, x));
+function from_candid_vec_n18(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<[Principal, _VIPStatus]>): Array<[Principal, VIPStatus]> {
+    return value.map((x)=>from_candid_tuple_n19(_uploadFile, _downloadFile, x));
 }
-function from_candid_vec_n36(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_MiningEvent>): Array<MiningEvent> {
-    return value.map((x)=>from_candid_MiningEvent_n37(_uploadFile, _downloadFile, x));
+function from_candid_vec_n25(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_VIPCatalogItem>): Array<VIPCatalogItem> {
+    return value.map((x)=>from_candid_VIPCatalogItem_n26(_uploadFile, _downloadFile, x));
+}
+function from_candid_vec_n39(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<[string, _Trade]>): Array<[string, Trade]> {
+    return value.map((x)=>from_candid_tuple_n40(_uploadFile, _downloadFile, x));
+}
+function from_candid_vec_n44(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<[string, _Deposit]>): Array<[string, Deposit]> {
+    return value.map((x)=>from_candid_tuple_n45(_uploadFile, _downloadFile, x));
+}
+function from_candid_vec_n47(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_MiningEvent>): Array<MiningEvent> {
+    return value.map((x)=>from_candid_MiningEvent_n48(_uploadFile, _downloadFile, x));
 }
 function from_candid_vec_n8(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<[string, _EarningItem]>): Array<[string, EarningItem]> {
     return value.map((x)=>from_candid_tuple_n9(_uploadFile, _downloadFile, x));
@@ -1449,7 +1590,7 @@ function to_candid_variant_n3(_uploadFile: (file: ExternalBlob) => Promise<Uint8
         guest: null
     } : value;
 }
-function to_candid_variant_n43(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Variant_bronze_gold_diamond_basic_silver): {
+function to_candid_variant_n55(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Variant_bronze_gold_diamond_basic_silver): {
     bronze: null;
 } | {
     gold: null;
@@ -1472,7 +1613,7 @@ function to_candid_variant_n43(_uploadFile: (file: ExternalBlob) => Promise<Uint
         silver: null
     } : value;
 }
-function to_candid_variant_n44(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Variant_buy_sell): {
+function to_candid_variant_n56(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Variant_buy_sell): {
     buy: null;
 } | {
     sell: null;
@@ -1483,7 +1624,7 @@ function to_candid_variant_n44(_uploadFile: (file: ExternalBlob) => Promise<Uint
         sell: null
     } : value;
 }
-function to_candid_variant_n45(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Variant_active_disabled): {
+function to_candid_variant_n57(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Variant_active_disabled): {
     active: null;
 } | {
     disabled: null;

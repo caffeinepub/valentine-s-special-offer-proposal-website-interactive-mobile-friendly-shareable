@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -8,53 +8,96 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { useGetEarningItems, useGetCallerEarningClaims, useSubmitEarningClaim } from '../../../hooks/useRewardQueries';
-import { getErrorMessage } from '../../../utils/getErrorMessage';
+import { Progress } from '@/components/ui/progress';
+import { useGetCallerEarningClaims, useGetVIPStatus } from '../../../hooks/useRewardQueries';
+import { useLocalEarnCatalog, getVIPDailyEarnings } from '../../../hooks/useLocalEarnCatalog';
+import { useLocalEarnQuota } from '../../../hooks/useLocalEarnQuota';
+import { useLocalEarnClaims } from '../../../hooks/useLocalEarnClaims';
 import { toast } from 'sonner';
-import { DollarSign, CheckCircle2, Clock, XCircle, Loader2 } from 'lucide-react';
+import { DollarSign, CheckCircle2, Clock, XCircle, Loader2, Play, Trophy, AlertCircle } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
 export function EarnPage() {
-  const { data: earningItems, isLoading: itemsLoading, error: itemsError } = useGetEarningItems();
-  const { data: claims, isLoading: claimsLoading, error: claimsError } = useGetCallerEarningClaims();
-  const submitClaim = useSubmitEarningClaim();
+  const { data: vipStatus, isLoading: vipLoading } = useGetVIPStatus();
+  const { data: backendClaims, isLoading: claimsLoading } = useGetCallerEarningClaims();
+  
+  const vipTier = (vipStatus?.tier || 'basic') as 'basic' | 'bronze' | 'silver' | 'gold' | 'diamond';
+  const localItems = useLocalEarnCatalog(vipTier);
+  const { incrementAds, incrementTasks, getAdLimits, getTaskLimits } = useLocalEarnQuota(vipTier);
+  const { claims: localClaims, addClaim } = useLocalEarnClaims();
 
-  const [claimDialogOpen, setClaimDialogOpen] = useState(false);
-  const [selectedItem, setSelectedItem] = useState<any>(null);
-  const [intent, setIntent] = useState('');
-  const [proof, setProof] = useState('');
-  const [userMessage, setUserMessage] = useState('');
+  const [watchingAd, setWatchingAd] = useState(false);
+  const [adTimer, setAdTimer] = useState(30);
+  const [taskDialogOpen, setTaskDialogOpen] = useState(false);
+  const [taskProof, setTaskProof] = useState('');
 
-  const handleOpenClaimDialog = (item: any) => {
-    setSelectedItem(item);
-    setIntent('');
-    setProof('');
-    setUserMessage('');
-    setClaimDialogOpen(true);
+  const adLimits = getAdLimits();
+  const taskLimits = getTaskLimits();
+
+  // Ad timer countdown
+  useEffect(() => {
+    if (watchingAd && adTimer > 0) {
+      const timer = setTimeout(() => setAdTimer(adTimer - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [watchingAd, adTimer]);
+
+  const handleWatchAd = () => {
+    if (!adLimits.canWatch) {
+      toast.error(`Daily ad limit reached (${adLimits.max}). Come back tomorrow!`);
+      return;
+    }
+    setWatchingAd(true);
+    setAdTimer(30);
   };
 
-  const handleSubmitClaim = async () => {
-    if (!selectedItem || !intent.trim() || !proof.trim()) {
-      toast.error('Please fill in all required fields');
+  const handleClaimAd = () => {
+    const adItem = localItems.find(i => i.type === 'ad');
+    if (!adItem) return;
+
+    incrementAds();
+    addClaim({
+      type: 'ad',
+      title: adItem.title,
+      reward: adItem.reward,
+    });
+    
+    toast.success(`Ad claim submitted! $${adItem.reward.toFixed(2)} pending admin approval.`);
+    setWatchingAd(false);
+    setAdTimer(30);
+  };
+
+  const handleOpenTaskDialog = () => {
+    if (!taskLimits.canComplete) {
+      toast.error(`Daily task limit reached (${taskLimits.max}). Come back tomorrow!`);
+      return;
+    }
+    setTaskProof('');
+    setTaskDialogOpen(true);
+  };
+
+  const handleSubmitTask = () => {
+    if (!taskProof.trim()) {
+      toast.error('Please provide proof of task completion');
       return;
     }
 
-    try {
-      await submitClaim.mutateAsync({
-        itemId: selectedItem.id,
-        intent: intent.trim(),
-        proof: proof.trim(),
-        userMessage: userMessage.trim() || null,
-      });
-      toast.success('Claim submitted successfully! Awaiting admin approval.');
-      setClaimDialogOpen(false);
-      setSelectedItem(null);
-    } catch (error) {
-      toast.error(getErrorMessage(error));
-    }
+    const taskItem = localItems.find(i => i.type === 'task');
+    if (!taskItem) return;
+
+    incrementTasks();
+    addClaim({
+      type: 'task',
+      title: taskItem.title,
+      reward: taskItem.reward,
+      proof: taskProof.trim(),
+    });
+
+    toast.success(`Task claim submitted! $${taskItem.reward.toFixed(2)} pending admin approval.`);
+    setTaskDialogOpen(false);
   };
 
-  if (itemsLoading) {
+  if (vipLoading) {
     return (
       <div className="space-y-6">
         <Skeleton className="h-32 w-full" />
@@ -63,15 +106,28 @@ export function EarnPage() {
     );
   }
 
-  if (itemsError) {
-    return (
-      <Alert variant="destructive">
-        <AlertDescription>
-          Failed to load earning opportunities. Please try again later.
-        </AlertDescription>
-      </Alert>
-    );
-  }
+  const adItem = localItems.find(i => i.type === 'ad');
+  const taskItem = localItems.find(i => i.type === 'task');
+  const dailyPotential = getVIPDailyEarnings(vipTier);
+
+  const allClaims = [
+    ...localClaims.map(c => ({
+      id: c.id,
+      title: c.title,
+      reward: c.reward,
+      status: c.status,
+      timestamp: BigInt(c.timestamp * 1_000_000),
+      adminMessage: null,
+    })),
+    ...(backendClaims || []).map(c => ({
+      id: c.id,
+      title: 'Backend Task',
+      reward: Number(c.rewardAmount) / 100,
+      status: c.status as string,
+      timestamp: c.created,
+      adminMessage: c.adminMessage,
+    })),
+  ].sort((a, b) => Number(b.timestamp - a.timestamp));
 
   const statusIcons = {
     pending: <Clock className="h-4 w-4" />,
@@ -89,41 +145,120 @@ export function EarnPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold mb-2">Earn Rewards</h1>
-        <p className="text-muted-foreground">Complete tasks and watch ads to earn USDT</p>
+        <p className="text-muted-foreground">Watch ads and complete tasks to earn USDT</p>
       </div>
+
+      {/* VIP Status & Daily Limits */}
+      <Card className="bg-gradient-to-br from-primary/5 to-accent/5 border-primary/20">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Trophy className="h-5 w-5 text-primary" />
+                {vipTier.toUpperCase()} Member
+              </CardTitle>
+              <CardDescription>Daily earning potential: ${dailyPotential.toFixed(2)}</CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <div className="flex justify-between text-sm mb-2">
+              <span>Ads Today: {adLimits.used} / {adLimits.max}</span>
+              <span className="text-muted-foreground">{adLimits.remaining} remaining</span>
+            </div>
+            <Progress value={(adLimits.used / adLimits.max) * 100} className="h-2" />
+          </div>
+          <div>
+            <div className="flex justify-between text-sm mb-2">
+              <span>Tasks Today: {taskLimits.used} / {taskLimits.max}</span>
+              <span className="text-muted-foreground">{taskLimits.remaining} remaining</span>
+            </div>
+            <Progress value={(taskLimits.used / taskLimits.max) * 100} className="h-2" />
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Earning Opportunities */}
       <div className="grid gap-4 md:grid-cols-2">
-        {!earningItems || earningItems.length === 0 ? (
-          <Card className="col-span-2">
-            <CardContent className="py-12 text-center text-muted-foreground">
-              <p>No earning opportunities available at the moment.</p>
-              <p className="text-sm">Check back later for new tasks!</p>
+        {/* Ad Card */}
+        {adItem && (
+          <Card className="hover:shadow-lg transition-shadow">
+            <CardHeader>
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <CardTitle className="text-lg">{adItem.title}</CardTitle>
+                  <CardDescription className="mt-1">{adItem.description}</CardDescription>
+                </div>
+                <Badge variant="default" className="ml-2">
+                  <DollarSign className="h-3 w-3 mr-1" />
+                  {adItem.reward.toFixed(2)}
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {!adLimits.canWatch ? (
+                <Alert>
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    Daily limit reached. Come back tomorrow!
+                  </AlertDescription>
+                </Alert>
+              ) : watchingAd ? (
+                <div className="space-y-4">
+                  <div className="text-center">
+                    <div className="text-4xl font-bold text-primary mb-2">{adTimer}s</div>
+                    <p className="text-sm text-muted-foreground">Please wait while the ad plays...</p>
+                  </div>
+                  <Progress value={((30 - adTimer) / 30) * 100} className="h-2" />
+                  <Button 
+                    onClick={handleClaimAd} 
+                    disabled={adTimer > 0}
+                    className="w-full"
+                  >
+                    {adTimer > 0 ? `Wait ${adTimer}s` : 'Claim Reward'}
+                  </Button>
+                </div>
+              ) : (
+                <Button onClick={handleWatchAd} className="w-full">
+                  <Play className="h-4 w-4 mr-2" />
+                  Watch Ad
+                </Button>
+              )}
             </CardContent>
           </Card>
-        ) : (
-          earningItems.map((item) => (
-            <Card key={item.id} className="hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <CardTitle className="text-lg">{item.name}</CardTitle>
-                    <CardDescription className="mt-1">{item.description}</CardDescription>
-                  </div>
-                  <Badge variant="default" className="ml-2">
-                    <DollarSign className="h-3 w-3 mr-1" />
-                    {(Number(item.rewardAmount) / 100).toFixed(2)}
-                  </Badge>
+        )}
+
+        {/* Task Card */}
+        {taskItem && (
+          <Card className="hover:shadow-lg transition-shadow">
+            <CardHeader>
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <CardTitle className="text-lg">{taskItem.title}</CardTitle>
+                  <CardDescription className="mt-1">{taskItem.description}</CardDescription>
                 </div>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground mb-4">{item.conditionText}</p>
-                <Button onClick={() => handleOpenClaimDialog(item)} className="w-full">
-                  Claim Reward
+                <Badge variant="default" className="ml-2">
+                  <DollarSign className="h-3 w-3 mr-1" />
+                  {taskItem.reward.toFixed(2)}
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {!taskLimits.canComplete ? (
+                <Alert>
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    Daily limit reached. Come back tomorrow!
+                  </AlertDescription>
+                </Alert>
+              ) : (
+                <Button onClick={handleOpenTaskDialog} className="w-full">
+                  Submit Task
                 </Button>
-              </CardContent>
-            </Card>
-          ))
+              )}
+            </CardContent>
+          </Card>
         )}
       </div>
 
@@ -138,100 +273,76 @@ export function EarnPage() {
             <div className="space-y-3">
               {[1, 2, 3].map(i => <Skeleton key={i} className="h-20 w-full" />)}
             </div>
-          ) : claimsError ? (
-            <Alert variant="destructive">
-              <AlertDescription>Failed to load claims history</AlertDescription>
-            </Alert>
-          ) : !claims || claims.length === 0 ? (
+          ) : allClaims.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <p>No claims submitted yet</p>
-              <p className="text-sm">Start earning by claiming rewards above!</p>
+              <p className="text-sm">Start earning by watching ads or completing tasks!</p>
             </div>
           ) : (
             <div className="space-y-3">
-              {claims.map((claim) => {
-                const item = earningItems?.find(i => i.id === claim.itemId);
-                const claimStatus = claim.status as string;
-                return (
-                  <div
-                    key={claim.id}
-                    className="flex items-center justify-between p-4 rounded-lg border border-border"
-                  >
-                    <div className="flex-1">
-                      <p className="font-medium">{item?.name || 'Unknown Task'}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {formatDistanceToNow(new Date(Number(claim.created) / 1_000_000), { addSuffix: true })}
+              {allClaims.map((claim) => (
+                <div
+                  key={claim.id}
+                  className="flex items-center justify-between p-4 rounded-lg border border-border"
+                >
+                  <div className="flex-1">
+                    <p className="font-medium">{claim.title}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {formatDistanceToNow(new Date(Number(claim.timestamp) / 1_000_000), { addSuffix: true })}
+                    </p>
+                    {claim.adminMessage && (
+                      <p className="text-sm text-muted-foreground mt-1 italic">
+                        Admin: {claim.adminMessage}
                       </p>
-                      {claim.adminMessage && (
-                        <p className="text-sm text-muted-foreground mt-1 italic">
-                          Admin: {claim.adminMessage}
-                        </p>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <span className="font-semibold">
-                        ${(Number(claim.rewardAmount) / 100).toFixed(2)}
-                      </span>
-                      <Badge variant={statusVariants[claimStatus as keyof typeof statusVariants] || 'secondary'}>
-                        <span className="flex items-center gap-1">
-                          {statusIcons[claimStatus as keyof typeof statusIcons]}
-                          {claimStatus}
-                        </span>
-                      </Badge>
-                    </div>
+                    )}
                   </div>
-                );
-              })}
+                  <div className="flex items-center gap-3">
+                    <span className="font-semibold">
+                      ${claim.reward.toFixed(2)}
+                    </span>
+                    <Badge variant={statusVariants[claim.status as keyof typeof statusVariants] || 'secondary'}>
+                      <span className="flex items-center gap-1">
+                        {statusIcons[claim.status as keyof typeof statusIcons]}
+                        {claim.status}
+                      </span>
+                    </Badge>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </CardContent>
       </Card>
 
-      {/* Claim Dialog */}
-      <Dialog open={claimDialogOpen} onOpenChange={setClaimDialogOpen}>
+      {/* Task Dialog */}
+      <Dialog open={taskDialogOpen} onOpenChange={setTaskDialogOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>Submit Claim</DialogTitle>
+            <DialogTitle>Submit Task Completion</DialogTitle>
             <DialogDescription>
-              {selectedItem?.name} - ${(Number(selectedItem?.rewardAmount || 0) / 100).toFixed(2)} reward
+              {taskItem?.title} - ${taskItem?.reward.toFixed(2)} reward
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="intent">Intent *</Label>
-              <Input
-                id="intent"
-                placeholder="What did you do to earn this reward?"
-                value={intent}
-                onChange={(e) => setIntent(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="proof">Proof *</Label>
-              <Input
-                id="proof"
-                placeholder="Provide proof (link, screenshot URL, etc.)"
-                value={proof}
-                onChange={(e) => setProof(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="message">Additional Message (Optional)</Label>
+              <Label htmlFor="proof">Proof of Completion *</Label>
               <Textarea
-                id="message"
-                placeholder="Any additional information..."
-                value={userMessage}
-                onChange={(e) => setUserMessage(e.target.value)}
-                rows={3}
+                id="proof"
+                placeholder="Describe what you did or provide a link/screenshot URL..."
+                value={taskProof}
+                onChange={(e) => setTaskProof(e.target.value)}
+                rows={4}
               />
+              <p className="text-xs text-muted-foreground">
+                Provide details or evidence that you completed the task
+              </p>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setClaimDialogOpen(false)}>
+            <Button variant="outline" onClick={() => setTaskDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleSubmitClaim} disabled={submitClaim.isPending}>
-              {submitClaim.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            <Button onClick={handleSubmitTask}>
               Submit Claim
             </Button>
           </DialogFooter>

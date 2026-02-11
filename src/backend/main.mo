@@ -10,15 +10,33 @@ import Runtime "mo:core/Runtime";
 import MixinAuthorization "authorization/MixinAuthorization";
 import AccessControl "authorization/access-control";
 import InviteLinksModule "invite-links/invite-links-module";
-import Migration "migration";
 import Random "mo:core/Random";
+import Migration "migration";
 
 (with migration = Migration.run)
 actor {
+  // --- Ownership Management ---
+  var owner : ?Principal = null;
+
   let accessControlState = AccessControl.initState();
   include MixinAuthorization(accessControlState);
 
-  //---------------------User Profile Management--------------------------
+  public query ({ caller }) func getOwner() : async ?Principal {
+    owner;
+  };
+
+  public shared ({ caller }) func claimOwnership() : async () {
+    switch (owner) {
+      case (null) { owner := ?caller };
+      case (?existing) {
+        if (existing != caller) {
+          Runtime.trap("This canister is already owned by another principal");
+        };
+      };
+    };
+  };
+
+  // --- User Profile Management ---
   public type UserProfile = {
     name : Text;
   };
@@ -46,7 +64,7 @@ actor {
     userProfiles.add(caller, profile);
   };
 
-  //---------------------Earning System--------------------------
+  // --- Earning System ---
   public type EarningItem = {
     id : Text;
     externalId : ?Text;
@@ -145,24 +163,140 @@ actor {
   let userVIPStatus = Map.empty<Principal, VIPStatus>();
   let userBalanceMap = Map.empty<Principal, Nat>();
 
-  // Public query - no auth needed, shows active items only
+  // ----- New VIP-Tier Based Catalog -----
+  public type TaskType = {
+    #ad;
+    #task;
+  };
+
+  public type VIPTier = {
+    #basic;
+    #bronze;
+    #silver;
+    #gold;
+    #diamond;
+  };
+
+  public type VIPCatalogItem = {
+    id : Text;
+    taskType : TaskType;
+    rewardAmount : Nat;
+    dailyLimit : Nat;
+    description : Text;
+  };
+
+  public type DailyProgress = {
+    adsWatched : Nat;
+    tasksCompleted : Nat;
+    lastResetTimestamp : Time.Time;
+  };
+
+  let userProgress = Map.empty<Principal, DailyProgress>();
+
+  let vipDailyLimits = Map.fromIter<Text, Nat>([
+    ("basic", 5),
+    ("bronze", 10),
+    ("silver", 15),
+    ("gold", 20),
+    ("diamond", 25),
+  ].values());
+
+  let rewardAmounts = Map.fromIter<Text, Nat>([
+    ("basic", 10),
+    ("bronze", 20),
+    ("silver", 30),
+    ("gold", 40),
+    ("diamond", 50),
+  ].values());
+
+  func getVIPItemsForTier(vipTier : Text) : [VIPCatalogItem] {
+    let dailyLimit = switch (vipDailyLimits.get(vipTier)) {
+      case (null) { 5 };
+      case (?limit) { limit };
+    };
+    let rewardAmount = switch (rewardAmounts.get(vipTier)) {
+      case (null) { 10 };
+      case (?amount) { amount };
+    };
+
+    [
+      {
+        id = "ad-" # vipTier;
+        taskType = #ad;
+        rewardAmount;
+        dailyLimit;
+        description = "Watch short ads for rewards. VIP tier: " # vipTier;
+      },
+      {
+        id = "task-" # vipTier;
+        taskType = #task;
+        rewardAmount;
+        dailyLimit;
+        description = "Complete micro-tasks for rewards. VIP tier: " # vipTier;
+      },
+    ];
+  };
+
+  public query ({ caller }) func getAvailableEarnItems() : async [VIPCatalogItem] {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can view earning items");
+    };
+
+    let tempStatus = switch (userVIPStatus.get(caller)) {
+      case (null) { #basic };
+      case (?vip) { vip.tier };
+    };
+
+    let vipTierText = switch (tempStatus) {
+      case (#basic) { "basic" };
+      case (#bronze) { "bronze" };
+      case (#silver) { "silver" };
+      case (#gold) { "gold" };
+      case (#diamond) { "diamond" };
+    };
+
+    let inMemoryItems = getVIPItemsForTier(vipTierText);
+    let persistentItems = earningItems.values().toArray();
+    let outputList = List.empty<VIPCatalogItem>();
+    outputList.addAll(inMemoryItems.values());
+    for (item in persistentItems.values()) {
+      if (item.status == #active) {
+        outputList.add({
+          id = item.id;
+          taskType = #task;
+          rewardAmount = item.rewardAmount;
+          dailyLimit = 9999;
+          description = item.description;
+        });
+      };
+    };
+
+    outputList.toArray();
+  };
+
   public query ({ caller }) func getAllEarningItems() : async [(Text, EarningItem)] {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can view earning items");
+    };
     earningItems.entries()
-      .filter(func((_, item)) { 
-        switch (item.status) {
-          case (#active) { true };
-          case (#disabled) { false };
-        };
-      })
+      .filter(
+        func((_, item)) {
+          switch (item.status) {
+            case (#active) { true };
+            case (#disabled) { false };
+          };
+        }
+      )
       .toArray();
   };
 
-  // Public query - no auth needed
   public query ({ caller }) func getEarningItem(id : Text) : async ?EarningItem {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can view earning items");
+    };
     earningItems.get(id);
   };
 
-  // User can view only their own claims
   public query ({ caller }) func getCallerEarningClaims() : async [EarningClaim] {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can view their claims");
@@ -172,12 +306,11 @@ actor {
       .toArray();
   };
 
-  // User submits earning claim
   public shared ({ caller }) func submitEarningClaim(
     itemId : Text,
     intent : Text,
     proof : Text,
-    userMessage : ?Text
+    userMessage : ?Text,
   ) : async EarningClaim {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can submit claims");
@@ -211,13 +344,12 @@ actor {
     claim;
   };
 
-  // Admin creates earning item
   public shared ({ caller }) func createEarningItem(
     name : Text,
     description : Text,
     rewardAmount : Nat,
     conditionText : Text,
-    externalId : ?Text
+    externalId : ?Text,
   ) : async EarningItem {
     if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
       Runtime.trap("Unauthorized: Only admins can create earning items");
@@ -240,14 +372,13 @@ actor {
     item;
   };
 
-  // Admin updates earning item
   public shared ({ caller }) func updateEarningItem(
     itemId : Text,
     name : Text,
     description : Text,
     rewardAmount : Nat,
     conditionText : Text,
-    status : { #active; #disabled }
+    status : { #active; #disabled },
   ) : async EarningItem {
     if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
       Runtime.trap("Unauthorized: Only admins can update earning items");
@@ -272,25 +403,26 @@ actor {
     updatedItem;
   };
 
-  // Admin views all pending claims
   public query ({ caller }) func getAllPendingEarningClaims() : async [EarningClaim] {
     if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
       Runtime.trap("Unauthorized: Only admins can view all pending claims");
     };
+
     earningClaims.values()
-      .filter(func(claim) { 
-        switch (claim.status) {
-          case (#pending) { true };
-          case (_) { false };
-        };
-      })
+      .filter(
+        func(claim) {
+          switch (claim.status) {
+            case (#pending) { true };
+            case (_) { false };
+          };
+        }
+      )
       .toArray();
   };
 
-  // Admin approves earning claim
   public shared ({ caller }) func approveEarningClaim(
     claimId : Text,
-    adminMessage : ?Text
+    adminMessage : ?Text,
   ) : async () {
     if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
       Runtime.trap("Unauthorized: Only admins can approve claims");
@@ -315,7 +447,6 @@ actor {
 
     earningClaims.add(claimId, approvedClaim);
 
-    // Update user balance
     let currentBalance = switch (userBalanceMap.get(claim.userId)) {
       case (null) { 0 };
       case (?bal) { bal };
@@ -323,10 +454,9 @@ actor {
     userBalanceMap.add(claim.userId, currentBalance + claim.rewardAmount);
   };
 
-  // Admin rejects earning claim
   public shared ({ caller }) func rejectEarningClaim(
     claimId : Text,
-    adminMessage : ?Text
+    adminMessage : ?Text,
   ) : async () {
     if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
       Runtime.trap("Unauthorized: Only admins can reject claims");
@@ -352,9 +482,7 @@ actor {
     earningClaims.add(claimId, rejectedClaim);
   };
 
-  //---------------------VIP System--------------------------
-
-  // User views their own VIP status
+  // --- VIP System ---
   public query ({ caller }) func getCallerVIPStatus() : async VIPStatus {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can view VIP status");
@@ -370,7 +498,6 @@ actor {
     };
   };
 
-  // User requests VIP upgrade
   public shared ({ caller }) func requestVIPUpgrade(
     tierTo : { #basic; #bronze; #silver; #gold; #diamond }
   ) : async () {
@@ -388,7 +515,6 @@ actor {
       case (?status) { status };
     };
 
-    // Check if already has pending request
     switch (currentStatus.requestedUpgrade) {
       case (?req) {
         switch (req.status) {
@@ -412,30 +538,31 @@ actor {
     userVIPStatus.add(caller, newStatus);
   };
 
-  // Admin views all pending VIP upgrade requests
   public query ({ caller }) func getAllPendingVIPUpgrades() : async [(Principal, VIPStatus)] {
     if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
       Runtime.trap("Unauthorized: Only admins can view all pending VIP upgrades");
     };
+
     userVIPStatus.entries()
-      .filter(func((_, status)) {
-        switch (status.requestedUpgrade) {
-          case (?req) {
-            switch (req.status) {
-              case (#pending) { true };
-              case (_) { false };
+      .filter(
+        func((_, status)) {
+          switch (status.requestedUpgrade) {
+            case (?req) {
+              switch (req.status) {
+                case (#pending) { true };
+                case (_) { false };
+              };
             };
+            case (null) { false };
           };
-          case (null) { false };
-        };
-      })
+        }
+      )
       .toArray();
   };
 
-  // Admin approves VIP upgrade
   public shared ({ caller }) func approveVIPUpgrade(
     user : Principal,
-    adminMessage : ?Text
+    adminMessage : ?Text,
   ) : async () {
     if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
       Runtime.trap("Unauthorized: Only admins can approve VIP upgrades");
@@ -468,10 +595,9 @@ actor {
     userVIPStatus.add(user, newStatus);
   };
 
-  // Admin rejects VIP upgrade
   public shared ({ caller }) func rejectVIPUpgrade(
     user : Principal,
-    adminMessage : ?Text
+    adminMessage : ?Text,
   ) : async () {
     if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
       Runtime.trap("Unauthorized: Only admins can reject VIP upgrades");
@@ -504,7 +630,7 @@ actor {
     userVIPStatus.add(user, newStatus);
   };
 
-  //---------------------Helper Functions--------------------------
+  // --- Helper Functions ---
   func fromNatToText(nat : Nat) : Text {
     var text : Text = "";
     switch (nat) {
@@ -560,7 +686,7 @@ actor {
     };
   };
 
-  //--------------------- Proposal Response Management -------------------------
+  // --- Proposal Response Management ---
   type ProposalResponse = {
     accepted : Bool;
     note : ?Text;
@@ -597,20 +723,25 @@ actor {
     if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
       Runtime.trap("Unauthorized: Only admins can generate invite codes");
     };
+
     let blob = await Random.blob();
     let code = InviteLinksModule.generateUUID(blob);
     InviteLinksModule.generateInviteCode(inviteState, code);
     code;
   };
 
-  public func submitRSVP(name : Text, attending : Bool, inviteCode : Text) : async () {
+  public shared ({ caller }) func submitRSVP(name : Text, attending : Bool, inviteCode : Text) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can submit RSVPs");
+    };
     InviteLinksModule.submitRSVP(inviteState, name, attending, inviteCode);
   };
 
   public query ({ caller }) func getAllRSVPs() : async [InviteLinksModule.RSVP] {
     if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only admins can view RSVPs");
+      Runtime.trap("Unauthorized: Only admins can view all RSVPs");
     };
+
     InviteLinksModule.getAllRSVPs(inviteState);
   };
 
@@ -618,6 +749,7 @@ actor {
     if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
       Runtime.trap("Unauthorized: Only admins can view invite codes");
     };
+
     InviteLinksModule.getInviteCodes(inviteState);
   };
 
@@ -812,7 +944,7 @@ actor {
 
   public type Deposit = {
     id : Text;
-    txId : Text;
+    txId : ?Text;
     amount : Int;
     asset : SupportedAsset;
     status : Text;
@@ -845,13 +977,11 @@ actor {
     available : Int;
   };
 
-  // Deposit address type for USDT networks
   public type DepositAddresses = {
     trc20Address : Text;
     erc20Address : Text;
   };
 
-  // Per-user exchange data storage
   let userBalances = Map.empty<Principal, Map.Map<Text, Balance>>();
   let userDeposits = Map.empty<Principal, Map.Map<Text, Deposit>>();
   let userWithdrawals = Map.empty<Principal, Map.Map<Text, Withdrawal>>();
@@ -883,7 +1013,10 @@ actor {
   };
 
   let exchangeRates = Map.fromIter(
-    [("BTC/USDT", 70000.0), ("ETH/USDT", 3500.0)].values()
+    [
+      ("BTC/USDT", 70000.0),
+      ("ETH/USDT", 3500.0),
+    ].values()
   );
 
   public type ExchangeState = {
@@ -895,7 +1028,6 @@ actor {
     exchangeRates : [(Text, Float)];
   };
 
-  // Public query - no auth needed
   public query ({ caller }) func getSupportedAssets() : async [SupportedAsset] {
     supportedAssetsInternal();
   };
@@ -935,13 +1067,11 @@ actor {
     };
   };
 
-  // USDT Deposit Address Management
   var usdtDepositAddresses : DepositAddresses = {
     trc20Address = "";
     erc20Address = "";
   };
 
-  // Query for current deposit addresses (user-accessible)
   public query ({ caller }) func getUsdtDepositAddresses() : async DepositAddresses {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can view deposit addresses");
@@ -949,7 +1079,6 @@ actor {
     usdtDepositAddresses;
   };
 
-  // Admin-only method to update addresses
   public shared ({ caller }) func setUsdtDepositAddresses(addresses : DepositAddresses) : async () {
     if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
       Runtime.trap("Unauthorized: Only admins can set deposit addresses");
@@ -957,9 +1086,7 @@ actor {
     usdtDepositAddresses := addresses;
   };
 
-  // --- Manual funds management without auto-completion ---
-
-  public shared ({ caller }) func requestDeposit(assetSymbol : Text, amount : Int) : async Deposit {
+  public shared ({ caller }) func requestDeposit(assetSymbol : Text, amount : Int, txId : ?Text) : async Deposit {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can create deposit requests");
     };
@@ -976,7 +1103,7 @@ actor {
     let depositId = Time.now().toText() # "-" # caller.toText();
     let deposit : Deposit = {
       id = depositId;
-      txId = "";
+      txId;
       amount;
       asset;
       status = "pending";
@@ -993,7 +1120,11 @@ actor {
     deposit;
   };
 
-  public shared ({ caller }) func requestWithdrawal(assetSymbol : Text, amount : Int, destinationAddress : Text) : async Withdrawal {
+  public shared ({ caller }) func requestWithdrawal(
+    assetSymbol : Text,
+    amount : Int,
+    destinationAddress : Text,
+  ) : async Withdrawal {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can create withdrawal requests");
     };
@@ -1028,7 +1159,6 @@ actor {
     withdrawal;
   };
 
-  // Admin views all pending deposits across all users
   public query ({ caller }) func getAllPendingDeposits() : async [(Principal, Deposit)] {
     if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
       Runtime.trap("Unauthorized: Only admins can view all pending deposits");
@@ -1045,7 +1175,6 @@ actor {
     result.toArray();
   };
 
-  // Admin views all pending withdrawals across all users
   public query ({ caller }) func getAllPendingWithdrawals() : async [(Principal, Withdrawal)] {
     if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
       Runtime.trap("Unauthorized: Only admins can view all pending withdrawals");
@@ -1062,10 +1191,13 @@ actor {
     result.toArray();
   };
 
-  // Admin-only mark deposit as complete (simulate after admin processing)
-  public shared ({ caller }) func markDepositCompleted(user : Principal, depositId : Text, txId : Text) : async () {
+  public shared ({ caller }) func markDepositCompleted(
+    user : Principal,
+    depositId : Text,
+    txId : Text,
+  ) : async () {
     if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only admins can complete deposits");
+      Runtime.trap("Unauthorized: Only admins can mark deposits as completed");
     };
 
     let userDepositsMap = switch (userDeposits.get(user)) {
@@ -1085,7 +1217,7 @@ actor {
     let completedDeposit : Deposit = {
       deposit with
       status = "completed";
-      txId;
+      txId = ?txId;
     };
 
     userDepositsMap.add(depositId, completedDeposit);
@@ -1094,10 +1226,9 @@ actor {
     updateBalance(user, deposit.asset, deposit.amount);
   };
 
-  // Admin-only mark withdrawal as complete (simulate after admin processing)
   public shared ({ caller }) func markWithdrawalCompleted(user : Principal, withdrawalId : Text) : async () {
     if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only admins can complete withdrawals");
+      Runtime.trap("Unauthorized: Only admins can mark withdrawals as completed");
     };
 
     let userWithdrawalsMap = switch (userWithdrawals.get(user)) {
@@ -1190,7 +1321,6 @@ actor {
     trade;
   };
 
-  // Helper Functions
   func updateBalance(principal : Principal, asset : SupportedAsset, amount : Int) {
     let balances = switch (userBalances.get(principal)) {
       case (null) { Map.empty<Text, Balance>() };
@@ -1261,6 +1391,17 @@ actor {
     switch (balances.get(assetSymbol)) {
       case (null) { 0 };
       case (?balance) { balance.available };
+    };
+  };
+
+  func requireOwner(caller : Principal) {
+    switch (owner) {
+      case (null) { Runtime.trap("Canister has no owner set") };
+      case (?o) {
+        if (caller != o) {
+          Runtime.trap("Unauthorized: Only the canister owner can call this function");
+        };
+      };
     };
   };
 };

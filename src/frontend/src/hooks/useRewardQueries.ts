@@ -1,7 +1,58 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useActor } from './useActor';
+import { useInternetIdentity } from './useInternetIdentity';
 import { Principal } from '@dfinity/principal';
 import type { Variant_bronze_gold_diamond_basic_silver } from '../backend';
+
+// Ownership Management
+export function useGetOwnershipStatus() {
+  const { actor, isFetching: actorFetching } = useActor();
+
+  return useQuery({
+    queryKey: ['ownershipStatus'],
+    queryFn: async () => {
+      if (!actor) throw new Error('Actor not available');
+      const owner = await actor.getOwner();
+      return {
+        hasOwner: owner !== null,
+        owner: owner,
+      };
+    },
+    enabled: !!actor && !actorFetching,
+  });
+}
+
+export function useIsOwner() {
+  const { actor, isFetching: actorFetching } = useActor();
+  const { identity } = useInternetIdentity();
+
+  return useQuery({
+    queryKey: ['isOwner', identity?.getPrincipal().toString()],
+    queryFn: async () => {
+      if (!actor || !identity) return false;
+      const owner = await actor.getOwner();
+      if (!owner) return false;
+      return owner.toString() === identity.getPrincipal().toString();
+    },
+    enabled: !!actor && !actorFetching && !!identity,
+  });
+}
+
+export function useClaimOwnership() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async () => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.claimOwnership();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['ownershipStatus'] });
+      queryClient.invalidateQueries({ queryKey: ['isOwner'] });
+    },
+  });
+}
 
 // Account Summary
 export function useGetAccountSummary() {
@@ -201,9 +252,9 @@ export function useRequestDeposit() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (amount: number) => {
+    mutationFn: async (params: { amount: number; txId: string | null }) => {
       if (!actor) throw new Error('Actor not available');
-      return actor.requestDeposit('USDT', BigInt(amount));
+      return actor.requestDeposit('USDT', BigInt(params.amount), params.txId);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['transferHistory'] });
@@ -239,7 +290,7 @@ export function useGetTransferHistory() {
       const state = await actor.getExchangeStateShared();
       
       const transfers: any[] = [];
-
+      
       state.deposits.forEach(([id, deposit]) => {
         transfers.push({
           id,
@@ -247,9 +298,10 @@ export function useGetTransferHistory() {
           amount: deposit.amount,
           status: deposit.status,
           timestamp: deposit.timestamp,
+          txId: deposit.txId || null,
         });
       });
-
+      
       state.withdrawals.forEach(([id, withdrawal]) => {
         transfers.push({
           id,
@@ -257,18 +309,19 @@ export function useGetTransferHistory() {
           amount: withdrawal.amount,
           status: withdrawal.status,
           timestamp: withdrawal.timestamp,
+          txId: null,
         });
       });
-
+      
       transfers.sort((a, b) => Number(b.timestamp - a.timestamp));
-
+      
       return transfers;
     },
     enabled: !!actor && !actorFetching,
   });
 }
 
-// Admin: Pending Deposits
+// Admin Functions
 export function useGetPendingDeposits() {
   const { actor, isFetching: actorFetching } = useActor();
 
@@ -279,7 +332,6 @@ export function useGetPendingDeposits() {
       return actor.getAllPendingDeposits();
     },
     enabled: !!actor && !actorFetching,
-    refetchInterval: 10000,
   });
 }
 
@@ -288,9 +340,9 @@ export function useMarkDepositCompleted() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (params: { userId: string; depositId: string; txId: string }) => {
+    mutationFn: async (params: { user: Principal; depositId: string; txId: string }) => {
       if (!actor) throw new Error('Actor not available');
-      return actor.markDepositCompleted(Principal.fromText(params.userId), params.depositId, params.txId);
+      return actor.markDepositCompleted(params.user, params.depositId, params.txId);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pendingDeposits'] });
@@ -298,7 +350,6 @@ export function useMarkDepositCompleted() {
   });
 }
 
-// Admin: Pending Withdrawals
 export function useGetPendingWithdrawals() {
   const { actor, isFetching: actorFetching } = useActor();
 
@@ -309,7 +360,6 @@ export function useGetPendingWithdrawals() {
       return actor.getAllPendingWithdrawals();
     },
     enabled: !!actor && !actorFetching,
-    refetchInterval: 10000,
   });
 }
 
@@ -318,9 +368,9 @@ export function useMarkWithdrawalCompleted() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (params: { userId: string; withdrawalId: string }) => {
+    mutationFn: async (params: { user: Principal; withdrawalId: string }) => {
       if (!actor) throw new Error('Actor not available');
-      return actor.markWithdrawalCompleted(Principal.fromText(params.userId), params.withdrawalId);
+      return actor.markWithdrawalCompleted(params.user, params.withdrawalId);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pendingWithdrawals'] });
@@ -328,7 +378,6 @@ export function useMarkWithdrawalCompleted() {
   });
 }
 
-// Admin: Pending Claims
 export function useGetPendingClaims() {
   const { actor, isFetching: actorFetching } = useActor();
 
@@ -339,7 +388,6 @@ export function useGetPendingClaims() {
       return actor.getAllPendingEarningClaims();
     },
     enabled: !!actor && !actorFetching,
-    refetchInterval: 10000,
   });
 }
 
@@ -373,7 +421,6 @@ export function useRejectEarningClaim() {
   });
 }
 
-// Admin: Pending VIP Upgrades
 export function useGetPendingVIPUpgrades() {
   const { actor, isFetching: actorFetching } = useActor();
 
@@ -384,7 +431,6 @@ export function useGetPendingVIPUpgrades() {
       return actor.getAllPendingVIPUpgrades();
     },
     enabled: !!actor && !actorFetching,
-    refetchInterval: 10000,
   });
 }
 
@@ -393,9 +439,9 @@ export function useApproveVIPUpgrade() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (params: { userId: string; adminMessage: string | null }) => {
+    mutationFn: async (params: { user: Principal; adminMessage: string | null }) => {
       if (!actor) throw new Error('Actor not available');
-      return actor.approveVIPUpgrade(Principal.fromText(params.userId), params.adminMessage);
+      return actor.approveVIPUpgrade(params.user, params.adminMessage);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pendingVIPUpgrades'] });
@@ -408,9 +454,9 @@ export function useRejectVIPUpgrade() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (params: { userId: string; adminMessage: string | null }) => {
+    mutationFn: async (params: { user: Principal; adminMessage: string | null }) => {
       if (!actor) throw new Error('Actor not available');
-      return actor.rejectVIPUpgrade(Principal.fromText(params.userId), params.adminMessage);
+      return actor.rejectVIPUpgrade(params.user, params.adminMessage);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pendingVIPUpgrades'] });

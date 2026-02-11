@@ -15,7 +15,7 @@ export interface Deposit {
   'id' : string,
   'status' : string,
   'asset' : SupportedAsset,
-  'txId' : string,
+  'txId' : [] | [string],
   'timestamp' : Time,
   'amount' : bigint,
 }
@@ -102,6 +102,8 @@ export interface SupportedAsset {
   'name' : string,
   'symbol' : string,
 }
+export type TaskType = { 'ad' : null } |
+  { 'task' : null };
 export type Time = bigint;
 export interface Trade {
   'id' : string,
@@ -119,6 +121,13 @@ export interface UserProfile { 'name' : string }
 export type UserRole = { 'admin' : null } |
   { 'user' : null } |
   { 'guest' : null };
+export interface VIPCatalogItem {
+  'id' : string,
+  'rewardAmount' : bigint,
+  'description' : string,
+  'dailyLimit' : bigint,
+  'taskType' : TaskType,
+}
 export interface VIPStatus {
   'requestedUpgrade' : [] | [
     {
@@ -153,6 +162,7 @@ export interface _SERVICE {
   'approveEarningClaim' : ActorMethod<[string, [] | [string]], undefined>,
   'approveVIPUpgrade' : ActorMethod<[Principal, [] | [string]], undefined>,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
+  'claimOwnership' : ActorMethod<[], undefined>,
   'completePayout' : ActorMethod<[Principal, bigint], undefined>,
   'createEarningItem' : ActorMethod<
     [string, string, bigint, string, [] | [string]],
@@ -165,6 +175,7 @@ export interface _SERVICE {
   'getAllPendingVIPUpgrades' : ActorMethod<[], Array<[Principal, VIPStatus]>>,
   'getAllPendingWithdrawals' : ActorMethod<[], Array<[Principal, Withdrawal]>>,
   'getAllRSVPs' : ActorMethod<[], Array<RSVP>>,
+  'getAvailableEarnItems' : ActorMethod<[], Array<VIPCatalogItem>>,
   'getCallerEarningClaims' : ActorMethod<[], Array<EarningClaim>>,
   'getCallerResponse' : ActorMethod<[], [] | [ProposalResponse]>,
   'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
@@ -176,6 +187,7 @@ export interface _SERVICE {
   'getMiningConfig' : ActorMethod<[], [] | [MiningConfig]>,
   'getMiningEvents' : ActorMethod<[], Array<MiningEvent>>,
   'getMiningState' : ActorMethod<[], [] | [MiningState]>,
+  'getOwner' : ActorMethod<[], [] | [Principal]>,
   'getPayoutHistory' : ActorMethod<[], Array<Payout>>,
   'getResponse' : ActorMethod<[Principal], [] | [ProposalResponse]>,
   'getSupportedAssets' : ActorMethod<[], Array<SupportedAsset>>,
@@ -188,7 +200,7 @@ export interface _SERVICE {
   'markWithdrawalCompleted' : ActorMethod<[Principal, string], undefined>,
   'rejectEarningClaim' : ActorMethod<[string, [] | [string]], undefined>,
   'rejectVIPUpgrade' : ActorMethod<[Principal, [] | [string]], undefined>,
-  'requestDeposit' : ActorMethod<[string, bigint], Deposit>,
+  'requestDeposit' : ActorMethod<[string, bigint, [] | [string]], Deposit>,
   'requestPayout' : ActorMethod<[bigint], undefined>,
   'requestVIPUpgrade' : ActorMethod<
     [

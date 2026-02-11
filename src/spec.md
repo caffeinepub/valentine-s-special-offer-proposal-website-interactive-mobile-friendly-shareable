@@ -1,15 +1,15 @@
 # Specification
 
 ## Summary
-**Goal:** Pivot the app into “Taskora Global,” a reward-based earning platform with VIP tiers, manual USDT transfers, and an admin panel (removing exchange-style navigation/pages/copy).
+**Goal:** Ensure the Earn page always shows working Ads/Tasks based on the user’s VIP tier, and update the Deposit flow to include optional transaction ID plus a locally stored screenshot proof (with backend support for storing the tx id/note only).
 
 **Planned changes:**
-- Replace exchange-focused landing/header/navigation with Taskora Global earning-focused structure and branding (site metadata + header brand).
-- Add user pages: Dashboard (balance, VIP status, earnings summary, recent activity), Earn (Watch Ads / Complete Tasks with claim submission + Pending/Approved/Rejected history), VIP (tier comparison + upgrade request pending until admin approval), Transfers (manual USDT TRC20/ERC20 deposit addresses + deposit/withdraw requests with pending/completed statuses and clear manual-processing disclosure).
-- Add Admin Panel (admin-only) to manage USDT deposit addresses, process deposits/withdrawals, approve/reject earning claims, and approve/reject VIP upgrade requests.
-- Update backend Motoko actor with persistent models + methods for accounts (balance/VIP), earning items/claims, VIP requests, transfers (addresses + requests), and admin-only processing with consistent access control and clear English unauthorized errors.
-- Add frontend React Query queries/mutations for new backend APIs with cache invalidation so dashboards/histories update immediately after user/admin actions.
-- Apply a cohesive new visual theme for a modern rewards/fintech SaaS look, distinct from the current exchange styling.
-- Add and use new Taskora Global static image assets (served from `frontend/public/assets/generated`) and replace the current exchange logo usage.
+- Add a simple VIP-tier-based Earn catalog (Basic/Bronze/Silver/Gold/Diamond) that always displays placeholder Ads and Tasks even if no backend earning items exist.
+- Track and display daily remaining quotas for Ads and Tasks per VIP tier, resetting by the user’s local calendar day.
+- Implement a simplified “Watch Ad” flow: 30-second countdown, then allow claim submission, decrementing the local daily Ad quota and showing an English success toast; disable when quota is exhausted.
+- Implement a simplified “Complete Task” flow: minimal claim form, decrementing the local daily Task quota, and adding the claim to “Your Claims”; disable when quota is exhausted.
+- Update the Deposit UI to include an optional Transaction ID input and a screenshot upload with local-only storage, preview, and an English note explaining screenshot stays on this device and deposits remain pending until admin approval.
+- Extend backend deposit request records/API to accept and store an optional transaction ID/note and show it in Admin “Pending Deposits”.
+- Update frontend deposit submission to send the optional transaction ID to the backend and keep React Query invalidation so transfer history updates immediately; show friendly English errors.
 
-**User-visible outcome:** Users see a Taskora Global rewards platform (not a crypto exchange) where they can view their balance/VIP status, submit earning claims, request VIP upgrades, and create manual USDT deposit/withdraw requests; admins can manage addresses and approve/complete all pending requests from a restricted admin panel.
+**User-visible outcome:** Users always see Ads and Tasks in Earn with VIP-based daily limits and simple claim flows, and can submit deposit requests with an optional transaction ID plus a locally stored screenshot proof while deposits remain pending until admin approval.

@@ -1,4 +1,4 @@
-import { useExchangeState } from '../../hooks/useExchangeQueries';
+import { useGetExchangeState } from '../../hooks/useExchangeQueries';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { History } from 'lucide-react';
 
 export function TransfersHistory() {
-  const { data: exchangeState, isLoading } = useExchangeState();
+  const { data: exchangeState, isLoading } = useGetExchangeState();
 
   if (isLoading) {
     return (

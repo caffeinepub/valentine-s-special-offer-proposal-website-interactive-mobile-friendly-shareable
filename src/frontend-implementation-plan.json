@@ -1,274 +1,158 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Taskora Global reward-based earning platform (frontend pivot)",
+  "title": "VIP-based Earn catalog + local quotas + deposit txId/screenshot (local-only)",
   "requirements": [
     {
-      "id": "REQ-46",
-      "summary": "Replace exchange-centric shell/navigation with Taskora Global reward-platform flow and remove Markets/Trade/Settings from the primary user journey.",
+      "id": "REQ-66",
+      "summary": "Ensure Earn page never renders empty by providing a local fallback earning catalog (Ads + Tasks) when backend items are missing or fail to load.",
       "acceptanceCriteria": [
-        "When the app loads, the primary navigation and landing content are focused on earning rewards and VIP membership (not markets/trade/exchange pricing).",
-        "No user-facing page presents the app as a crypto exchange or shows exchange-specific labels like “Markets”/“Trade” as primary sections."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/components/ExchangeAppShell.tsx",
-          "operation": "modify",
-          "description": "Refactor the main shell to a Taskora Global flow: update PageType to dashboard/earn/vip/transfers/admin, set default to dashboard, remove exchange page imports (Markets/Trade/Settings), wire new Taskora pages, and keep admin gating using the authorization-based admin check (useIsCurrentUserAdmin). Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/components/exchange/ExchangeHeader.tsx",
-          "operation": "modify",
-          "description": "Replace exchange header branding + nav labels with Taskora Global (Dashboard/Earn/VIP/Transfers/Admin), remove Markets/Trade/Settings, and switch logo reference to frontend/public/assets/generated/taskora-logo.dim_512x512.png. Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/components/taskora/pages/DashboardPage.tsx",
-          "operation": "create",
-          "description": "Create the Taskora Global Dashboard page component and ensure it is reachable from the shell as the default screen (no exchange copy)."
-        }
-      ]
-    },
-    {
-      "id": "REQ-47",
-      "summary": "Implement a user Dashboard page showing balance, VIP status, earnings summaries, and recent activity with friendly states.",
-      "acceptanceCriteria": [
-        "A signed-in user can view a dashboard with balance, VIP tier, and a recent activity list.",
-        "Loading, empty, and error states display user-friendly English messages (no raw stack traces)."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/components/taskora/pages/DashboardPage.tsx",
-          "operation": "modify",
-          "description": "Implement dashboard UI: (a) available balance (from reward-platform account summary query/hook), (b) VIP tier/status, (c) today/this week earnings summary derived from approved claims timestamps, (d) recent activity list combining earning claims + deposit/withdraw request history; include explicit loading/empty/error states in English using existing error-mapping patterns. Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/hooks/useRewardQueries.ts",
-          "operation": "create",
-          "description": "Add React Query queries for dashboard needs (account summary/balance, VIP status, earning history, transfer history) with consistent query keys for later invalidation. Use the authorization-based actor lifecycle patterns already used in the app. Verify the component's usage instructions before implementing."
-        }
-      ]
-    },
-    {
-      "id": "REQ-48",
-      "summary": "Add an Earn page listing earning opportunities and allow users to submit earning claims with Pending/Approved/Rejected history visibility.",
-      "acceptanceCriteria": [
-        "The Earn page renders a list of earning items and a clear call-to-action to submit completion/claim.",
-        "Submitting a claim creates a new history entry with status “Pending”.",
-        "After admin approval, the user’s balance increases and the entry status becomes “Approved”.",
-        "If admin rejects, the entry status becomes “Rejected” and the user balance does not increase."
+        "When a signed-in user opens the Earn page, they see at least a few earning opportunities without requiring manual backend setup.",
+        "If earning opportunities cannot be loaded, the UI shows a clear English error state (no stack traces)."
       ],
       "file_operations": [
         {
           "path": "frontend/src/components/taskora/pages/EarnPage.tsx",
+          "operation": "modify",
+          "description": "Change Earn page rendering to avoid an empty state: if backend earning items are empty or fail to load, render a local fallback list of Ads/Tasks, and show a concise English warning/alert when backend items fail to load (without stack traces)."
+        },
+        {
+          "path": "frontend/src/hooks/useLocalEarnCatalog.ts",
           "operation": "create",
-          "description": "Create Earn page UI that lists earning items (minimum Watch Ads + Complete Tasks) and provides a claim submission flow (intent/proof/user message). Render the user's claim history with clear English status labels (Pending/Approved/Rejected) and friendly loading/empty/error states. Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/hooks/useRewardQueries.ts",
-          "operation": "modify",
-          "description": "Add queries/mutations for earning items and claim submission/retrieval; on successful claim submission, invalidate earning history and dashboard/account summary query keys so the UI updates without reload. Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/components/ExchangeAppShell.tsx",
-          "operation": "modify",
-          "description": "Wire Earn page into the main navigation flow so it is reachable as a primary section (and gated behind login, consistent with the authorization component’s frontend guidance). Verify the component's usage instructions before implementing."
+          "description": "Add a local-only earn catalog helper hook that can generate a basic set of Ads + Tasks for the caller's VIP tier and provide stable item IDs/titles for display when backend items are unavailable."
         }
       ]
     },
     {
-      "id": "REQ-49",
-      "summary": "Implement VIP tiers page with comparison table and VIP upgrade requests that remain pending until admin approval.",
+      "id": "REQ-67",
+      "summary": "Provide a simplified VIP-tier-based earning catalog with fixed daily quotas/rewards and show remaining daily quota for Ads and Tasks, resetting by local calendar day.",
       "acceptanceCriteria": [
-        "VIP page displays multiple tiers (e.g., Free plus paid tiers) with clear English descriptions of benefits.",
-        "A signed-in user can submit a VIP upgrade request that appears as “Pending” in their account status/history.",
-        "An admin can approve the request; after approval, the user’s VIP tier updates on the user Dashboard and VIP page."
+        "The Earn page reads the caller VIP tier (Basic/Bronze/Silver/Gold/Diamond) and shows the corresponding VIP-tier earning items.",
+        "The UI shows remaining counts for “Ads remaining today” and “Tasks remaining today” based on the user’s VIP tier.",
+        "Daily limits reset based on the user’s local calendar day (a simple reset is acceptable for this ‘simpler version’).",
+        "All user-facing text is in English."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/components/taskora/pages/VipPage.tsx",
+          "path": "frontend/src/hooks/useLocalEarnQuota.ts",
           "operation": "create",
-          "description": "Create VIP page with a tier comparison table (Free + paid tiers) and a CTA to request upgrade; show current tier and any pending request (status + optional admin message) with English labels. Verify the component's usage instructions before implementing."
+          "description": "Implement localStorage-backed daily quota tracking for Ads/Tasks keyed by local calendar day + VIP tier, exposing remaining counts and decrement helpers."
+        },
+        {
+          "path": "frontend/src/components/taskora/pages/EarnPage.tsx",
+          "operation": "modify",
+          "description": "Read the caller VIP tier using existing VIP status query, display VIP-tier Ads/Tasks items from the local catalog, and show 'Ads remaining today' and 'Tasks remaining today' with a local-day reset behavior."
         },
         {
           "path": "frontend/src/hooks/useRewardQueries.ts",
           "operation": "modify",
-          "description": "Add queries/mutations for VIP status and VIP upgrade requests; on success, invalidate VIP status and dashboard/account summary query keys so tier updates propagate immediately after admin approval. Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/components/ExchangeAppShell.tsx",
-          "operation": "modify",
-          "description": "Wire VIP page into the main navigation flow as a primary section and ensure it is login-gated per the authorization component’s frontend guidance. Verify the component's usage instructions before implementing."
+          "description": "Add/adjust a lightweight query usage in Earn flows to read caller VIP tier (reuse existing useGetVIPStatus) so the Earn UI can drive the VIP-tier catalog and quotas consistently."
         }
       ]
     },
     {
-      "id": "REQ-50",
-      "summary": "Implement Transfers module for manual USDT deposits/withdrawals with admin-configured addresses, request creation, and clear manual-processing disclosure.",
+      "id": "REQ-68",
+      "summary": "Implement a simplified Watch Ad flow with a 30-second countdown gate and local quota decrement on claim submission.",
       "acceptanceCriteria": [
-        "Transfers page shows USDT (TRC20) and USDT (ERC20) deposit addresses with copy-to-clipboard controls.",
-        "A deposit request can be created by the signed-in user and is stored with status “Pending” until admin completion.",
-        "A withdrawal request can be created by the signed-in user and is stored with status “Pending” until admin completion.",
-        "Clear English disclosure states that deposits/withdrawals are processed manually by the admin and the app does not connect to real blockchains or generate real deposit addresses automatically."
+        "An Ad card provides a clear ‘Watch’ action.",
+        "Watching an Ad shows a 30-second timer and prevents instant claim submission until the timer completes.",
+        "After completion, the user can submit a claim and sees a success toast in English: claim submitted and awaiting admin approval.",
+        "The user cannot exceed the daily Ad quota; once quota is reached, the UI disables further Ad watches for the day with an English explanation."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/taskora/pages/EarnPage.tsx",
+          "operation": "modify",
+          "description": "Add an Ad card interaction: 'Watch' starts a 30-second countdown UI; disable claiming until timer completes; on completion allow 'Submit claim' which decrements local Ads quota and shows an English success toast indicating pending admin approval; disable further watches when quota is exhausted with an English explanation."
+        },
+        {
+          "path": "frontend/src/hooks/useLocalEarnQuota.ts",
+          "operation": "modify",
+          "description": "Add an Ads-specific decrement helper and guard utilities so the Earn UI can prevent exceeding the daily Ads quota."
+        },
+        {
+          "path": "frontend/src/hooks/useLocalEarnClaims.ts",
+          "operation": "create",
+          "description": "Create a local-only 'Your Claims' store (localStorage-backed) for Ad claims submitted from the simplified flow so the Earn page can show a pending claim entry even when backend items are not configured."
+        }
+      ]
+    },
+    {
+      "id": "REQ-69",
+      "summary": "Implement a simplified Complete Task flow with a minimal claim dialog, local quota decrement, and local 'Your Claims' entry.",
+      "acceptanceCriteria": [
+        "Task cards provide a ‘Submit Task’ / ‘Claim’ action that opens a minimal claim dialog.",
+        "Submitting a task claim decrements the daily Task quota and adds an entry to ‘Your Claims’.",
+        "The user cannot exceed the daily Task quota; once quota is reached, the UI disables further task claims for the day with an English explanation."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/taskora/pages/EarnPage.tsx",
+          "operation": "modify",
+          "description": "Add Task card 'Submit Task' action opening a minimal dialog (proof/description text); on submit decrement local Tasks quota, add a pending entry to 'Your Claims', and disable submission when daily quota is exhausted with an English explanation."
+        },
+        {
+          "path": "frontend/src/hooks/useLocalEarnQuota.ts",
+          "operation": "modify",
+          "description": "Add a Tasks-specific decrement helper and guard utilities so the Earn UI can prevent exceeding the daily Tasks quota."
+        },
+        {
+          "path": "frontend/src/hooks/useLocalEarnClaims.ts",
+          "operation": "modify",
+          "description": "Extend local claims store to include Task claims (with user-entered proof text) and expose a combined list for rendering in Earn 'Your Claims'."
+        }
+      ]
+    },
+    {
+      "id": "REQ-70",
+      "summary": "Add Deposit UI fields for optional transaction ID and local-only screenshot upload with preview and persistence across refresh, with clear English notes.",
+      "acceptanceCriteria": [
+        "Deposit tab includes a ‘Transaction ID (optional)’ input.",
+        "Deposit tab includes a ‘Upload Screenshot (stored locally)’ input that accepts an image file and shows a small preview.",
+        "The screenshot is persisted locally (survives refresh on the same browser/device) and is not uploaded to the backend.",
+        "The UI includes a clear English note that admin approval is required and the screenshot is local-only."
       ],
       "file_operations": [
         {
           "path": "frontend/src/components/taskora/pages/TransfersPage.tsx",
+          "operation": "modify",
+          "description": "In the Deposit tab, add a 'Transaction ID (optional)' input and an image file input for 'Upload Screenshot (stored locally)' with a small preview; add clear English notes stating deposits remain pending until admin approval and that the screenshot stays on this device and is not sent to the backend."
+        },
+        {
+          "path": "frontend/src/hooks/useLocalDepositProof.ts",
           "operation": "create",
-          "description": "Create Taskora Transfers page showing admin-configured USDT TRC20/ERC20 addresses with copy-to-clipboard controls (reuse CopyField) and sections to create deposit/withdrawal requests plus transfer history; include the manual-processing disclosure in English. Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/components/exchange/SimulationDisclosure.tsx",
-          "operation": "modify",
-          "description": "Update disclosure copy (still English) to fit Taskora Global transfers wording while preserving the required statement that there is no real blockchain connectivity and addresses are not generated automatically."
-        },
-        {
-          "path": "frontend/src/hooks/useRewardQueries.ts",
-          "operation": "modify",
-          "description": "Add queries/mutations for USDT deposit addresses and creating deposit/withdrawal requests; on success, invalidate transfer history + dashboard/account summary query keys so pending items appear immediately. Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/components/ExchangeAppShell.tsx",
-          "operation": "modify",
-          "description": "Wire Transfers page into the primary navigation flow and ensure it is login-gated consistent with the authorization component’s frontend guidance. Verify the component's usage instructions before implementing."
+          "description": "Implement localStorage-backed persistence for the deposit transaction ID draft and screenshot (store as data URL) so it survives refresh on the same browser/device; expose helpers for setting/clearing and for generating preview-safe URLs."
         }
       ]
     },
     {
-      "id": "REQ-51",
-      "summary": "Implement an admin-only Admin Panel UI to manage USDT addresses and process pending deposits/withdrawals, earning claims, and VIP upgrades.",
+      "id": "REQ-72",
+      "summary": "Update frontend deposit request call signature to include optional transaction ID and preserve React Query invalidation so transfer history refreshes immediately, with friendly English errors.",
       "acceptanceCriteria": [
-        "Non-admin users cannot access the Admin Panel UI and receive a clear English access error/empty state.",
-        "Admin can update TRC20/ERC20 addresses; users see updated values on Transfers page without a manual refresh (standard query invalidation/refetch).",
-        "Admin can mark deposits and withdrawals as Completed; user history updates to show Completed status.",
-        "Admin can approve/reject earning claims; approval credits the user balance and updates the claim status accordingly.",
-        "Admin can approve/reject VIP upgrade requests; approval updates the user VIP tier."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/components/taskora/pages/AdminPanelPage.tsx",
-          "operation": "create",
-          "description": "Create Taskora Admin Panel with tabs/sections for: setting TRC20/ERC20 addresses, processing pending deposits, processing pending withdrawals, reviewing earning claims (approve/reject with optional admin message), and reviewing VIP upgrade requests (approve/reject with optional admin message). Use clear English statuses and friendly empty/error states. Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/components/ExchangeAppShell.tsx",
-          "operation": "modify",
-          "description": "Wire the new Taskora Admin Panel page into admin navigation; gate access using the authorization component’s admin check and show clear English access denied UI for non-admin users. Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/hooks/useRewardQueries.ts",
-          "operation": "modify",
-          "description": "Add admin-only queries/mutations for updating addresses, listing pending deposits/withdrawals/claims/VIP requests, and processing actions; ensure on success the correct user-facing query keys are invalidated (addresses, transfer history, earning history, VIP status, dashboard/account summary). Verify the component's usage instructions before implementing."
-        }
-      ]
-    },
-    {
-      "id": "REQ-53",
-      "summary": "Add React Query hooks (queries + mutations) for reward-platform functions with cache invalidation and user-friendly errors.",
-      "acceptanceCriteria": [
-        "All new user/admin actions trigger appropriate query invalidation and refresh relevant screens without requiring a full page reload.",
-        "Errors are displayed as user-friendly English toasts/messages using the existing error-mapping utility patterns."
+        "Submitting a deposit request sends the amount and the optional transaction ID to the backend.",
+        "After submission, the Transfer History list updates without a manual refresh (via existing query invalidation).",
+        "Errors are shown as user-friendly English messages using the existing getErrorMessage utility."
       ],
       "file_operations": [
         {
           "path": "frontend/src/hooks/useRewardQueries.ts",
           "operation": "modify",
-          "description": "Centralize reward-platform React Query hooks for user flows (dashboard/account summary, earning items/claims, VIP status/requests, USDT addresses, deposit/withdraw requests) and admin flows (pending lists + processing). Implement consistent query keys and invalidate/refetch on mutations. Verify the component's usage instructions before implementing."
+          "description": "Update the Taskora deposit mutation to accept an optional txId parameter and pass it to the backend requestDeposit call; keep the existing React Query cache invalidation so transfer history and recent activity refresh immediately."
         },
         {
-          "path": "frontend/src/components/taskora/pages/EarnPage.tsx",
+          "path": "frontend/src/components/taskora/pages/TransfersPage.tsx",
           "operation": "modify",
-          "description": "Ensure mutation error handling shows English toasts/messages using the existing getErrorMessage utility (no raw errors) and that success triggers immediate UI refresh via query invalidation. Verify the component's usage instructions before implementing."
+          "description": "Wire the optional transaction ID field into the deposit submission call; keep existing getErrorMessage-based error handling and ensure success clears the local txId/screenshot draft as appropriate (screenshot remains local-only)."
         },
         {
-          "path": "frontend/src/components/taskora/pages/AdminPanelPage.tsx",
+          "path": "frontend/src/hooks/useExchangeQueries.ts",
           "operation": "modify",
-          "description": "Ensure all admin processing actions use user-friendly English toasts/messages via getErrorMessage and trigger immediate query refresh through invalidation. Verify the component's usage instructions before implementing."
-        }
-      ]
-    },
-    {
-      "id": "REQ-54",
-      "summary": "Update metadata and in-app branding to Taskora Global reward/earning platform.",
-      "acceptanceCriteria": [
-        "Browser tab title and meta description reflect Taskora Global’s reward/earning platform purpose (not exchange wording).",
-        "Header branding shows “Taskora Global” and matches the new navigation structure."
-      ],
-      "file_operations": [
+          "description": "Update exchange deposit mutation to match the updated backend requestDeposit method signature by supplying txId as null when not provided, preventing build/type failures and preserving query invalidation."
+        },
         {
-          "path": "frontend/index.html",
+          "path": "frontend/src/components/exchange/DepositForm.tsx",
           "operation": "modify",
-          "description": "Update HTML title and meta description to Taskora Global reward/earning platform wording (remove exchange/trading language)."
-        },
-        {
-          "path": "frontend/src/components/exchange/ExchangeHeader.tsx",
-          "operation": "modify",
-          "description": "Update header brand text to “Taskora Global” and align navigation labels with the reward-platform sections; use the new logo at frontend/public/assets/generated/taskora-logo.dim_512x512.png."
-        }
-      ]
-    },
-    {
-      "id": "REQ-55",
-      "summary": "Apply a cohesive modern rewards/fintech SaaS visual theme distinct from the exchange styling with strong contrast/readability.",
-      "acceptanceCriteria": [
-        "The app has a consistent, professional visual theme across Dashboard/Earn/VIP/Transfers/Admin pages.",
-        "Theme avoids a default blue/purple look unless it is clearly transformed into a distinct brand palette.",
-        "All key UI elements meet strong contrast/readability expectations (buttons, text, cards, tables)."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/index.css",
-          "operation": "modify",
-          "description": "Replace the current exchange-oriented color tokens with a distinct Taskora Global dark SaaS palette (background/surface/primary/accent/destructive/muted/etc.), ensuring accessible contrast and consistent typography/spacing."
-        },
-        {
-          "path": "frontend/tailwind.config.js",
-          "operation": "modify",
-          "description": "Adjust extended theme values that are exchange-specific (e.g., glow shadows) to align with the new Taskora Global palette and ensure consistent styling across cards/tables/buttons."
-        },
-        {
-          "path": "frontend/src/components/taskora/layouts/TaskoraLayout.tsx",
-          "operation": "create",
-          "description": "Create a shared layout wrapper for Taskora pages (common page header area, consistent spacing, optional background pattern/hero treatment) and use it from Dashboard/Earn/VIP/Transfers/Admin pages for cohesion."
-        }
-      ]
-    },
-    {
-      "id": "REQ-56",
-      "summary": "Add new Taskora Global generated static image assets and update UI to use them instead of the exchange logo.",
-      "acceptanceCriteria": [
-        "All required generated images exist under frontend/public/assets/generated and are referenced by the UI via static paths.",
-        "The header shows the new Taskora Global logo asset (not the current exchange-logo file)."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/public/assets/generated/taskora-logo.dim_512x512.png",
-          "operation": "create",
-          "description": "Add generated static asset: Taskora Global logo mark (flat vector style) at frontend/public/assets/generated/taskora-logo.dim_512x512.png."
-        },
-        {
-          "path": "frontend/public/assets/generated/taskora-hero.dim_1400x800.png",
-          "operation": "create",
-          "description": "Add generated static asset: hero illustration (modern rewards dashboard on laptop/phone, dark SaaS aesthetic) at frontend/public/assets/generated/taskora-hero.dim_1400x800.png."
-        },
-        {
-          "path": "frontend/public/assets/generated/taskora-bg.dim_1600x900.png",
-          "operation": "create",
-          "description": "Add generated static asset: abstract dark background pattern at frontend/public/assets/generated/taskora-bg.dim_1600x900.png."
-        },
-        {
-          "path": "frontend/public/assets/generated/taskora-icons.dim_128x128.png",
-          "operation": "create",
-          "description": "Add generated static asset: icon set (ads/play, checklist/tasks, VIP crown) at frontend/public/assets/generated/taskora-icons.dim_128x128.png."
-        },
-        {
-          "path": "frontend/src/components/exchange/ExchangeHeader.tsx",
-          "operation": "modify",
-          "description": "Switch header logo reference from frontend/public/assets/generated/exchange-logo.dim_512x512.png to frontend/public/assets/generated/taskora-logo.dim_512x512.png and ensure alt text/branding matches Taskora Global."
-        },
-        {
-          "path": "frontend/src/components/taskora/pages/DashboardPage.tsx",
-          "operation": "modify",
-          "description": "Render the new hero/background assets in the dashboard (use frontend/public/assets/generated/taskora-hero.dim_1400x800.png and frontend/public/assets/generated/taskora-bg.dim_1600x900.png) to replace exchange visuals."
+          "description": "Adjust the exchange deposit request call path (if needed after hook signature change) so deposits continue to submit successfully without requiring a txId, and continue showing user-friendly English success/error toasts."
         }
       ]
     }

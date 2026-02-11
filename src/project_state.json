@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 17,
+  "projectStateVersion": 23,
   "summary": "Focus Taskora Global on a reward-based investment/earning platform (ads + tasks/mini-games) with VIP tiers, manual USDT (TRC20/ERC20) deposit/withdrawal flows admin-managed, and an admin panel; drop the crypto-exchange-style direction.",
   "architectural_notes": [
     "Keep it simple: static HTML/CSS/JS site suitable for easy hosting (e.g., GitHub Pages/Netlify).",
@@ -9,14 +9,17 @@
     "Keep deployed Version 4 saved/side-by-side before starting the new site build.",
     "Project scope pivot requested: build a full crypto exchange (deposits/transfers, multi-coin support, full exchange functions) and display prices above real market prices.",
     "No direct blockchain integrations; deposits/withdrawals are admin-managed/manual using provided USDT TRC20/ERC20 addresses and recorded txids (placeholders allowed initially).",
-    "User clarified the intended product is a reward-based investment/earning platform (ads + tasks) with VIP tiers and manual admin-managed USDT deposits/withdrawals, not a full crypto exchange."
+    "User clarified the intended product is a reward-based investment/earning platform (ads + tasks) with VIP tiers and manual admin-managed USDT deposits/withdrawals, not a full crypto exchange.",
+    "Harden admin security: enforce admin-only access in backend for all admin methods; restrict admin panel route access and require strong authentication so only the owner account can access it.",
+    "Deposit proof screenshots should be stored locally on the client (no backend image storage), alongside a deposit request remaining Pending until admin approval."
   ],
   "known_issues": [
     "Mining process is not starting when user attempts to start mining (start control has no effect / mining remains inactive).",
-    "Withdrawals/payouts remain stuck in \"Pending\" and do not transition to \"Received\"/completed status after the user receives the withdrawal."
+    "Withdrawals/payouts remain stuck in \"Pending\" and do not transition to \"Received\"/completed status after the user receives the withdrawal.",
+    "Branding/metadata inconsistency: app shows “CryptoExchange” name and URL/metadata references “Bitcoin mining website” despite project being Taskora Global.",
+    "Earn section ads are not showing/visible on the live site."
   ],
   "isFixRequest": true,
-  "imageRequirements": "## Required Images\n- Taskora Global logo mark, flat vector style (taskora-logo.dim_512x512.png)\n- Hero illustration of a modern rewards dashboard on a laptop/phone, dark SaaS aesthetic (taskora-hero.dim_1400x800.png)\n- Abstract background pattern with subtle geometric shapes, dark theme (taskora-bg.dim_1600x900.png)\n- Icon set: ads/play button symbol, checklist/tasks symbol, VIP crown symbol, minimal line icons (taskora-icons.dim_128x128.png)",
   "existing_features": [
     {
       "id": "feature-create-a-mobile-first-valentine-proposal-website-that-presents-a-special-offer-to-the-user-s-girlfriend-and-guides-her-through-a-short-romantic-flow-landing-offer-details-proposal-question-all-user-facing-text-must-be-in-english",
@@ -409,6 +412,110 @@
         "REQ-56"
       ],
       "version": 1
+    },
+    {
+      "id": "feature-implement-an-owner-only-security-model-so-that-only-a-single-internet-identity-principal-the-app-owner-can-access-the-admin-panel-and-call-any-admin-only-backend-methods-all-other-signed-in-users-must-be-blocked-even-if-they-can-navigate-to-admin-routes",
+      "title": "Implement an owner-only security model so that only a single Internet Identity principal (the app owner) can access the Admin Panel and call any admin-only backend methods; all other signed-in users must be blocked even if they can navigate to admin routes.",
+      "reqIds": [
+        "REQ-57"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-frontend-to-reflect-owner-only-admin-access-hide-or-disable-admin-navigation-for-non-owners-and-show-a-clear-english-access-denied-state-if-a-non-owner-somehow-navigates-to-the-admin-page",
+      "title": "Update the frontend to reflect owner-only admin access: hide or disable Admin navigation for non-owners, and show a clear English \"Access Denied\" state if a non-owner somehow navigates to the admin page.",
+      "reqIds": [
+        "REQ-60"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-an-owner-setup-ux-in-the-frontend-for-first-time-initialization-if-no-owner-is-set-show-a-secure-claim-ownership-action-to-the-currently-signed-in-user-with-clear-english-warnings-that-this-can-only-be-done-once-and-should-be-performed-by-the-project-owner",
+      "title": "Add an owner setup UX in the frontend for first-time initialization: if no owner is set, show a secure \"Claim Ownership\" action to the currently signed-in user, with clear English warnings that this can only be done once and should be performed by the project owner.",
+      "reqIds": [
+        "REQ-61"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-do-not-provide-or-display-any-hardcoded-admin-username-password-login-details-the-only-authentication-mechanism-must-remain-internet-identity-and-the-app-should-display-english-guidance-that-admin-access-is-tied-to-the-owner-s-internet-identity-principal",
+      "title": "Do not provide or display any hardcoded admin username/password \"login details\"; the only authentication mechanism must remain Internet Identity, and the app should display English guidance that admin access is tied to the owner’s Internet Identity principal.",
+      "reqIds": [
+        "REQ-62"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-make-the-admin-panel-and-the-first-time-claim-admin-ownership-flow-discoverable-and-reachable-for-the-initial-owner-if-no-owner-is-set-yet-show-an-admin-entry-in-the-header-navigation-even-though-the-current-caller-is-not-an-owner-yet-so-the-user-can-navigate-to-the-admin-page-and-see-the-claim-ownership-card-ensure-direct-navigation-to-the-admin-page-works-from-the-browser-address-bar-e-g-loading-the-app-with-a-hash-route-like-admin-or-equivalent-by-initializing-and-updating-the-app-s-current-page-state-from-the-url-and-responding-to-url-changes",
+      "title": "Make the Admin Panel and the first-time \"Claim Admin Ownership\" flow discoverable and reachable for the initial owner:\n- If no owner is set yet, show an Admin entry in the header navigation (even though the current caller is not an owner yet) so the user can navigate to the Admin page and see the Claim Ownership card.\n- Ensure direct navigation to the admin page works from the browser address bar (e.g., loading the app with a hash route like `/#/admin` or equivalent) by initializing and updating the app’s current page state from the URL and responding to URL changes.",
+      "reqIds": [
+        "REQ-63"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-replace-legacy-cryptoexchange-branding-in-the-profile-setup-modal-with-taskora-global-and-ensure-all-user-facing-text-in-that-modal-is-consistent-with-the-taskora-global-reward-platform-context",
+      "title": "Replace legacy \"CryptoExchange\" branding in the profile setup modal with \"Taskora Global\" and ensure all user-facing text in that modal is consistent with the Taskora Global reward platform context.",
+      "reqIds": [
+        "REQ-64"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-remove-replace-any-remaining-user-facing-legacy-pivot-references-so-the-app-consistently-presents-as-taskora-global-not-bitcoin-mining-not-cryptoexchange-across-visible-ui-copy-and-any-page-level-titles-shown-to-users",
+      "title": "Remove/replace any remaining user-facing legacy pivot references so the app consistently presents as \"Taskora Global\" (not Bitcoin mining / not CryptoExchange) across visible UI copy and any page-level titles shown to users.",
+      "reqIds": [
+        "REQ-65"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-ensure-the-earn-page-always-shows-a-simple-working-set-of-earning-opportunities-ads-tasks-even-when-the-backend-has-no-earning-items-configured-yet-so-users-never-see-an-empty-earn-section-by-default",
+      "title": "Ensure the Earn page always shows a simple, working set of earning opportunities (Ads + Tasks) even when the backend has no earning items configured yet, so users never see an empty Earn section by default.",
+      "reqIds": [
+        "REQ-66"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-simplified-vip-tier-based-earning-catalog-for-the-earn-page-that-provides-ads-and-tasks-per-vip-tier-using-fixed-daily-quotas-and-fixed-per-item-rewards-as-placeholders-randomized-titles-and-clearly-displays-the-user-s-remaining-daily-quota-for-ads-tasks",
+      "title": "Add a simplified VIP-tier-based earning catalog for the Earn page that provides Ads and Tasks per VIP tier using fixed daily quotas and fixed per-item rewards (as placeholders/randomized titles), and clearly displays the user’s remaining daily quota for Ads/Tasks.",
+      "reqIds": [
+        "REQ-67"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-a-simplified-watch-ad-flow-in-the-earn-page-clicking-an-ad-item-starts-a-30-second-countdown-once-finished-the-user-can-submit-a-claim-for-that-ad-reward-and-the-local-daily-quota-for-ads-decrements",
+      "title": "Implement a simplified ‘Watch Ad’ flow in the Earn page: clicking an Ad item starts a 30-second countdown; once finished, the user can submit a claim for that Ad reward, and the local daily quota for Ads decrements.",
+      "reqIds": [
+        "REQ-68"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-a-simplified-complete-task-flow-in-the-earn-page-tasks-can-be-claimed-via-a-minimal-form-e-g-short-description-proof-text-and-the-local-daily-quota-for-tasks-decrements-on-submission",
+      "title": "Implement a simplified ‘Complete Task’ flow in the Earn page: tasks can be claimed via a minimal form (e.g., short description/proof text), and the local daily quota for Tasks decrements on submission.",
+      "reqIds": [
+        "REQ-69"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-transfers-deposit-ui-to-include-1-an-optional-user-entered-transaction-id-field-and-2-a-screenshot-upload-control-whose-image-is-stored-only-locally-in-the-browser-not-sent-to-the-backend-with-a-clear-english-note-that-the-screenshot-stays-on-this-device",
+      "title": "Update the Transfers (Deposit) UI to include (1) an optional user-entered transaction ID field and (2) a screenshot upload control whose image is stored only locally in the browser (not sent to the backend), with a clear English note that the screenshot stays on this device.",
+      "reqIds": [
+        "REQ-70"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-frontend-reward-hooks-and-transfers-page-to-call-the-updated-backend-deposit-request-method-signature-including-the-optional-user-transaction-id-and-keep-react-query-cache-invalidation-so-transfer-history-updates-immediately-after-submission",
+      "title": "Update the frontend reward hooks and Transfers page to call the updated backend deposit-request method signature (including the optional user transaction ID) and keep React Query cache invalidation so transfer history updates immediately after submission.",
+      "reqIds": [
+        "REQ-72"
+      ],
+      "version": 1
     }
   ],
   "new_feature_requests": [
@@ -547,6 +654,60 @@
       "summary": "Update the backend canister to add persistent data models and methods for the reward platform: user account state (balance + VIP tier), earning item definitions, earning claim submission + review (pending/approved/rejected), VIP upgrade requests + review, and admin-only processing actions; enforce access control consistently using existing authorization patterns.",
       "reqIds": [
         "REQ-52"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-44",
+      "summary": "Lock down Admin Panel so only the project owner can access it (strong admin authentication + strict backend access control; prevent any other client/user from reaching admin routes).",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-46",
+      "summary": "Add backend ownership binding: persist an optional owner principal in canister state and provide methods to (1) query the current ownership status and (2) claim/set the owner principal securely when no owner is set yet.",
+      "reqIds": [
+        "REQ-58"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-47",
+      "summary": "Update backend authorization checks for admin-only operations to enforce owner-only access (do not rely solely on the existing generic admin permission checks).",
+      "reqIds": [
+        "REQ-59"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-48",
+      "summary": "Fix owner onboarding/admin access: ensure “Claim Ownership” card appears when no owner is set (on production too), and ensure /admin access works for the owner principal; show clear guidance/error states when ownership is unset.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-49",
+      "summary": "Clean up leftover branding/metadata/routing labels from previous pivots: remove “CryptoExchange” name prompts and any “Bitcoin mining website” wording in URL/title/metadata so the app consistently shows “Taskora Global”.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-50",
+      "summary": "Earn section: add VIP-tier-based Ads/Tasks with daily quotas and per-ad earnings (Bronze/Silver/Gold/Diamond), using random ad/task items as placeholders.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-51",
+      "summary": "Deposit flow enhancement: allow user to enter transaction ID and upload a deposit screenshot proof (stored locally on client); deposit request remains Pending until admin approves/completes.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-57",
+      "summary": "Extend the backend deposit-request flow so a user-submitted deposit request can store an optional user-provided transaction ID/note alongside the pending deposit record, and expose it to the owner/admin when reviewing pending deposits.",
+      "reqIds": [
+        "REQ-71"
       ],
       "status": "pending"
     }

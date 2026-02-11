@@ -36,9 +36,9 @@ export function ProfileSetupModal() {
     <Dialog open={true}>
       <DialogContent className="sm:max-w-md" onPointerDownOutside={(e) => e.preventDefault()}>
         <DialogHeader>
-          <DialogTitle>Welcome to CryptoExchange</DialogTitle>
+          <DialogTitle>Welcome to Taskora Global</DialogTitle>
           <DialogDescription>
-            Please enter your name to complete your profile setup
+            Please enter your name to complete your profile setup and start earning rewards
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">

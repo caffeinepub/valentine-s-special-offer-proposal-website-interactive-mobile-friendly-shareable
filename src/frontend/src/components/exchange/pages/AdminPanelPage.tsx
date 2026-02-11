@@ -1,92 +1,80 @@
 import { useState } from 'react';
-import { useExchangeState, useGetUsdtDepositAddresses, useSetUsdtDepositAddresses, useMarkDepositCompleted, useMarkWithdrawalCompleted } from '../../../hooks/useExchangeQueries';
+import { useGetExchangeState, useGetUsdtDepositAddresses, useSetUsdtDepositAddresses, useMarkExchangeDepositCompleted, useMarkExchangeWithdrawalCompleted } from '../../../hooks/useExchangeQueries';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { toast } from 'sonner';
 import { getErrorMessage } from '../../../utils/getErrorMessage';
-import { Settings, Wallet, ArrowDownToLine, ArrowUpFromLine, Loader2, Check } from 'lucide-react';
+import { toast } from 'sonner';
+import { Settings, Loader2, CheckCircle } from 'lucide-react';
+import { useGetPendingExchangeDeposits, useGetPendingExchangeWithdrawals } from '../../../hooks/useExchangeQueries';
 
 export function AdminPanelPage() {
-  const { data: exchangeState, isLoading: stateLoading } = useExchangeState();
-  const { data: depositAddresses, isLoading: addressesLoading } = useGetUsdtDepositAddresses();
+  const { data: addresses, isLoading: addressesLoading } = useGetUsdtDepositAddresses();
+  const { data: pendingDeposits, isLoading: depositsLoading } = useGetPendingExchangeDeposits();
+  const { data: pendingWithdrawals, isLoading: withdrawalsLoading } = useGetPendingExchangeWithdrawals();
   const setAddresses = useSetUsdtDepositAddresses();
-  const markDepositCompleted = useMarkDepositCompleted();
-  const markWithdrawalCompleted = useMarkWithdrawalCompleted();
+  const markDepositCompleted = useMarkExchangeDepositCompleted();
+  const markWithdrawalCompleted = useMarkExchangeWithdrawalCompleted();
 
   const [trc20Address, setTrc20Address] = useState('');
   const [erc20Address, setErc20Address] = useState('');
-  const [editingAddresses, setEditingAddresses] = useState(false);
-
-  // State for completion forms
-  const [completingDeposit, setCompletingDeposit] = useState<string | null>(null);
-  const [depositTxId, setDepositTxId] = useState('');
-  const [completingWithdrawal, setCompletingWithdrawal] = useState<string | null>(null);
-
-  // Load addresses when available
-  if (depositAddresses && !editingAddresses && !trc20Address && !erc20Address) {
-    setTrc20Address(depositAddresses.trc20Address);
-    setErc20Address(depositAddresses.erc20Address);
-  }
+  const [depositTxIds, setDepositTxIds] = useState<Record<string, string>>({});
 
   const handleSaveAddresses = async () => {
+    if (!trc20Address.trim() && !erc20Address.trim()) {
+      toast.error('Please enter at least one address');
+      return;
+    }
+
     try {
       await setAddresses.mutateAsync({
-        trc20Address,
-        erc20Address,
+        trc20Address: trc20Address.trim() || addresses?.trc20Address || '',
+        erc20Address: erc20Address.trim() || addresses?.erc20Address || '',
       });
       toast.success('Deposit addresses updated successfully');
-      setEditingAddresses(false);
+      setTrc20Address('');
+      setErc20Address('');
     } catch (error) {
       toast.error(getErrorMessage(error));
     }
   };
 
-  const handleMarkDepositCompleted = async (user: string, depositId: string) => {
-    if (!depositTxId.trim()) {
+  const handleCompleteDeposit = async (user: any, depositId: string) => {
+    const txId = depositTxIds[depositId];
+    if (!txId?.trim()) {
       toast.error('Please enter a transaction ID');
       return;
     }
 
     try {
-      await markDepositCompleted.mutateAsync({ user, depositId, txId: depositTxId });
+      await markDepositCompleted.mutateAsync({ user, depositId, txId: txId.trim() });
       toast.success('Deposit marked as completed');
-      setCompletingDeposit(null);
-      setDepositTxId('');
+      setDepositTxIds(prev => {
+        const updated = { ...prev };
+        delete updated[depositId];
+        return updated;
+      });
     } catch (error) {
       toast.error(getErrorMessage(error));
     }
   };
 
-  const handleMarkWithdrawalCompleted = async (user: string, withdrawalId: string) => {
+  const handleCompleteWithdrawal = async (user: any, withdrawalId: string) => {
     try {
       await markWithdrawalCompleted.mutateAsync({ user, withdrawalId });
       toast.success('Withdrawal marked as completed');
-      setCompletingWithdrawal(null);
     } catch (error) {
       toast.error(getErrorMessage(error));
     }
   };
 
-  // Extract all deposits and withdrawals with user info
-  const allDeposits = exchangeState?.deposits || [];
-  const allWithdrawals = exchangeState?.withdrawals || [];
-
-  const pendingDeposits = allDeposits
-    .filter(([_, d]) => d.status === 'pending')
-    .map(([_, d]) => d);
-
-  const pendingWithdrawals = allWithdrawals
-    .filter(([_, w]) => w.status === 'pending')
-    .map(([_, w]) => w);
-
-  if (stateLoading || addressesLoading) {
+  if (addressesLoading) {
     return (
       <div className="space-y-6">
         <Skeleton className="h-32 w-full" />
@@ -98,10 +86,8 @@ export function AdminPanelPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Admin Panel</h1>
-        <p className="text-muted-foreground mt-2">
-          Manage deposit addresses and process pending transfers
-        </p>
+        <h1 className="text-3xl font-bold mb-2">Admin Panel</h1>
+        <p className="text-muted-foreground">Manage exchange settings and pending requests</p>
       </div>
 
       <Tabs defaultValue="addresses" className="space-y-6">
@@ -111,60 +97,68 @@ export function AdminPanelPage() {
             Deposit Addresses
           </TabsTrigger>
           <TabsTrigger value="deposits">
-            <ArrowDownToLine className="h-4 w-4 mr-2" />
-            Pending Deposits ({pendingDeposits.length})
+            Pending Deposits
+            {pendingDeposits && pendingDeposits.length > 0 && (
+              <Badge variant="secondary" className="ml-2">{pendingDeposits.length}</Badge>
+            )}
           </TabsTrigger>
           <TabsTrigger value="withdrawals">
-            <ArrowUpFromLine className="h-4 w-4 mr-2" />
-            Pending Withdrawals ({pendingWithdrawals.length})
+            Pending Withdrawals
+            {pendingWithdrawals && pendingWithdrawals.length > 0 && (
+              <Badge variant="secondary" className="ml-2">{pendingWithdrawals.length}</Badge>
+            )}
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="addresses">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Wallet className="h-5 w-5" />
-                USDT Deposit Addresses
-              </CardTitle>
-              <CardDescription>
-                Configure the USDT deposit addresses shown to users
-              </CardDescription>
+              <CardTitle>USDT Deposit Addresses</CardTitle>
+              <CardDescription>Configure the addresses where users can send USDT deposits</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="trc20">USDT (TRC20) Address</Label>
+                <Label htmlFor="current-trc20">Current TRC20 Address</Label>
                 <Input
-                  id="trc20"
-                  value={trc20Address}
-                  onChange={(e) => {
-                    setTrc20Address(e.target.value);
-                    setEditingAddresses(true);
-                  }}
-                  placeholder="Enter TRC20 address"
+                  id="current-trc20"
+                  value={addresses?.trc20Address || 'Not set'}
+                  disabled
+                  className="font-mono"
                 />
               </div>
-
               <div className="space-y-2">
-                <Label htmlFor="erc20">USDT (ERC20) Address</Label>
+                <Label htmlFor="current-erc20">Current ERC20 Address</Label>
                 <Input
-                  id="erc20"
-                  value={erc20Address}
-                  onChange={(e) => {
-                    setErc20Address(e.target.value);
-                    setEditingAddresses(true);
-                  }}
-                  placeholder="Enter ERC20 address"
+                  id="current-erc20"
+                  value={addresses?.erc20Address || 'Not set'}
+                  disabled
+                  className="font-mono"
                 />
               </div>
-
-              <Button
-                onClick={handleSaveAddresses}
-                disabled={setAddresses.isPending || !editingAddresses}
-              >
-                {setAddresses.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Save Addresses
-              </Button>
+              <div className="pt-4 border-t space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="new-trc20">New TRC20 Address</Label>
+                  <Input
+                    id="new-trc20"
+                    placeholder="Enter new TRC20 address"
+                    value={trc20Address}
+                    onChange={(e) => setTrc20Address(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="new-erc20">New ERC20 Address</Label>
+                  <Input
+                    id="new-erc20"
+                    placeholder="Enter new ERC20 address"
+                    value={erc20Address}
+                    onChange={(e) => setErc20Address(e.target.value)}
+                  />
+                </div>
+                <Button onClick={handleSaveAddresses} disabled={setAddresses.isPending}>
+                  {setAddresses.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Update Addresses
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -173,12 +167,14 @@ export function AdminPanelPage() {
           <Card>
             <CardHeader>
               <CardTitle>Pending Deposits</CardTitle>
-              <CardDescription>
-                Review and approve deposit requests from users
-              </CardDescription>
+              <CardDescription>Review and approve deposit requests</CardDescription>
             </CardHeader>
             <CardContent>
-              {pendingDeposits.length === 0 ? (
+              {depositsLoading ? (
+                <div className="space-y-3">
+                  {[1, 2, 3].map(i => <Skeleton key={i} className="h-16 w-full" />)}
+                </div>
+              ) : !pendingDeposits || pendingDeposits.length === 0 ? (
                 <Alert>
                   <AlertDescription>No pending deposits</AlertDescription>
                 </Alert>
@@ -187,65 +183,40 @@ export function AdminPanelPage() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Deposit ID</TableHead>
+                        <TableHead>User</TableHead>
                         <TableHead>Amount</TableHead>
                         <TableHead>Asset</TableHead>
-                        <TableHead>Time</TableHead>
-                        <TableHead>Action</TableHead>
+                        <TableHead>Transaction ID</TableHead>
+                        <TableHead className="text-right">Action</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {pendingDeposits.map((deposit) => (
+                      {pendingDeposits.map(([user, deposit]) => (
                         <TableRow key={deposit.id}>
-                          <TableCell className="font-mono text-sm">{deposit.id}</TableCell>
+                          <TableCell className="font-mono text-xs">
+                            {user.toString().slice(0, 12)}...
+                          </TableCell>
                           <TableCell className="font-mono">
                             {(Number(deposit.amount) / Math.pow(10, Number(deposit.asset.decimals))).toFixed(8)}
                           </TableCell>
+                          <TableCell>{deposit.asset.symbol}</TableCell>
                           <TableCell>
-                            <Badge variant="outline">{deposit.asset.symbol}</Badge>
+                            <Input
+                              placeholder="Enter TX ID"
+                              value={depositTxIds[deposit.id] || ''}
+                              onChange={(e) => setDepositTxIds(prev => ({ ...prev, [deposit.id]: e.target.value }))}
+                              className="max-w-[200px]"
+                            />
                           </TableCell>
-                          <TableCell className="text-sm text-muted-foreground">
-                            {new Date(Number(deposit.timestamp / BigInt(1000000))).toLocaleString()}
-                          </TableCell>
-                          <TableCell>
-                            {completingDeposit === deposit.id ? (
-                              <div className="flex gap-2 items-center">
-                                <Input
-                                  placeholder="Transaction ID"
-                                  value={depositTxId}
-                                  onChange={(e) => setDepositTxId(e.target.value)}
-                                  className="w-48"
-                                />
-                                <Button
-                                  size="sm"
-                                  onClick={() => handleMarkDepositCompleted('user', deposit.id)}
-                                  disabled={markDepositCompleted.isPending}
-                                >
-                                  {markDepositCompleted.isPending ? (
-                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                  ) : (
-                                    <Check className="h-4 w-4" />
-                                  )}
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => {
-                                    setCompletingDeposit(null);
-                                    setDepositTxId('');
-                                  }}
-                                >
-                                  Cancel
-                                </Button>
-                              </div>
-                            ) : (
-                              <Button
-                                size="sm"
-                                onClick={() => setCompletingDeposit(deposit.id)}
-                              >
-                                Complete
-                              </Button>
-                            )}
+                          <TableCell className="text-right">
+                            <Button
+                              size="sm"
+                              onClick={() => handleCompleteDeposit(user, deposit.id)}
+                              disabled={markDepositCompleted.isPending}
+                            >
+                              <CheckCircle className="h-4 w-4 mr-1" />
+                              Complete
+                            </Button>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -261,12 +232,14 @@ export function AdminPanelPage() {
           <Card>
             <CardHeader>
               <CardTitle>Pending Withdrawals</CardTitle>
-              <CardDescription>
-                Review and approve withdrawal requests from users
-              </CardDescription>
+              <CardDescription>Review and process withdrawal requests</CardDescription>
             </CardHeader>
             <CardContent>
-              {pendingWithdrawals.length === 0 ? (
+              {withdrawalsLoading ? (
+                <div className="space-y-3">
+                  {[1, 2, 3].map(i => <Skeleton key={i} className="h-16 w-full" />)}
+                </div>
+              ) : !pendingWithdrawals || pendingWithdrawals.length === 0 ? (
                 <Alert>
                   <AlertDescription>No pending withdrawals</AlertDescription>
                 </Alert>
@@ -275,39 +248,33 @@ export function AdminPanelPage() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Withdrawal ID</TableHead>
+                        <TableHead>User</TableHead>
                         <TableHead>Amount</TableHead>
                         <TableHead>Asset</TableHead>
                         <TableHead>Destination</TableHead>
-                        <TableHead>Time</TableHead>
-                        <TableHead>Action</TableHead>
+                        <TableHead className="text-right">Action</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {pendingWithdrawals.map((withdrawal) => (
+                      {pendingWithdrawals.map(([user, withdrawal]) => (
                         <TableRow key={withdrawal.id}>
-                          <TableCell className="font-mono text-sm">{withdrawal.id}</TableCell>
+                          <TableCell className="font-mono text-xs">
+                            {user.toString().slice(0, 12)}...
+                          </TableCell>
                           <TableCell className="font-mono">
                             {(Number(withdrawal.amount) / Math.pow(10, Number(withdrawal.asset.decimals))).toFixed(8)}
                           </TableCell>
-                          <TableCell>
-                            <Badge variant="outline">{withdrawal.asset.symbol}</Badge>
-                          </TableCell>
-                          <TableCell className="font-mono text-sm truncate max-w-[200px]">
+                          <TableCell>{withdrawal.asset.symbol}</TableCell>
+                          <TableCell className="font-mono text-xs truncate max-w-[200px]">
                             {withdrawal.destinationAddress}
                           </TableCell>
-                          <TableCell className="text-sm text-muted-foreground">
-                            {new Date(Number(withdrawal.timestamp / BigInt(1000000))).toLocaleString()}
-                          </TableCell>
-                          <TableCell>
+                          <TableCell className="text-right">
                             <Button
                               size="sm"
-                              onClick={() => handleMarkWithdrawalCompleted('user', withdrawal.id)}
-                              disabled={markWithdrawalCompleted.isPending && completingWithdrawal === withdrawal.id}
+                              onClick={() => handleCompleteWithdrawal(user, withdrawal.id)}
+                              disabled={markWithdrawalCompleted.isPending}
                             >
-                              {markWithdrawalCompleted.isPending && completingWithdrawal === withdrawal.id ? (
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              ) : null}
+                              <CheckCircle className="h-4 w-4 mr-1" />
                               Complete
                             </Button>
                           </TableCell>

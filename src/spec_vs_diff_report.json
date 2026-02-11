@@ -1,62 +1,84 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-11T08:34:09.897Z",
-  "summary": "The diff implements most of the new Taskora Global reward-platform UI (Dashboard/Earn/VIP/Transfers/Admin) plus a new Tailwind theme, updated branding/meta, and React Query hooks. However, several key requirements are either not evidenced in the diff (notably the generated image assets), or appear to still rely on legacy/exchange backend state/methods rather than fully implementing the new backend data models and lifecycle semantics (e.g., transfer history/statuses and recent activity).",
+  "generatedAt": "2026-02-11T12:16:44.655Z",
+  "summary": "Diff adds local-only Earn catalog/quota/claims hooks and updates Taskora EarnPage with a 30s ad timer + task proof flow. It also adds a localStorage-backed deposit proof hook and updates Taskora TransfersPage to send an optional txId. However, several acceptance criteria cannot be confirmed from the truncated diffs (notably backend deposit API changes/admin display, deposit screenshot UI/note, and React Query invalidation behavior). Additionally, multiple unrelated “exchange” UI/query changes appear in the diff but were not requested.",
   "missing_requirements": [
     {
-      "id": "REQ-47",
-      "requirement": "Dashboard shows a summary of today/this week earnings from ads/tasks (in addition to balance, VIP tier, recent activity).",
-      "reason": "The added DashboardPage shows Available Balance, VIP Status, and Total Earnings (all-time), but no visible today/this week earnings summary in the provided diff snippet.",
+      "id": "REQ-67",
+      "requirement": "Daily limits reset based on the user’s local calendar day (a simple reset is acceptable for this ‘simpler version’).",
+      "reason": "The quota reset uses `new Date().toISOString().split('T')[0]`, which keys by UTC date rather than the user’s local calendar day.",
       "evidence": [
-        "frontend/src/components/taskora/pages/DashboardPage.tsx"
+        "frontend/src/hooks/useLocalEarnQuota.ts"
       ]
     },
     {
-      "id": "REQ-52",
-      "requirement": "Backend canister adds persistent reward-platform models and methods (account summary, earning items/claims lifecycle, VIP requests lifecycle, USDT addresses, deposit/withdraw request + completion, transfer history) with consistent access control and clear Unauthorized traps.",
-      "reason": "backend/main.mo shows new types and some state maps, but the frontend hooks still call legacy exchange methods/state (e.g., getExchangeStateShared) for deposits/withdrawals and activity aggregation, indicating the new backend transfer/history surface may not be implemented or wired end-to-end in the diff. The diff snippet does not provide evidence of the full set of required backend methods and admin processing actions.",
+      "id": "REQ-70",
+      "requirement": "Deposit tab includes an ‘Upload Screenshot (stored locally)’ input that accepts an image file and shows a small preview, persisted locally across refresh, and includes a clear English note that the screenshot stays on this device (local-only) and admin approval is required.",
+      "reason": "Local screenshot persistence is implemented via `useLocalDepositProof`, and TransfersPage contains a file-change handler, but the actual upload control, preview rendering, and the required English note(s) are not visible in the truncated TransfersPage diff.",
       "evidence": [
+        "frontend/src/hooks/useLocalDepositProof.ts",
+        "frontend/src/components/taskora/pages/TransfersPage.tsx"
+      ]
+    },
+    {
+      "id": "REQ-71",
+      "requirement": "Backend deposit request API accepts optional user-provided transaction ID/note, stores it with the pending deposit record, and Admin Panel ‘Pending Deposits’ shows the user-provided transaction ID when reviewing pending deposits; existing pending/completed behavior remains.",
+      "reason": "A migration adds `txId : ?Text`, but the diff for `backend/main.mo` is truncated and does not show the updated deposit-request method signature, storing behavior, nor exposing the user-provided txId in the pending-deposits admin view.",
+      "evidence": [
+        "backend/migration.mo",
         "backend/main.mo",
-        "frontend/src/hooks/useRewardQueries.ts"
+        "frontend/src/components/taskora/pages/AdminPanelPage.tsx"
       ]
     },
     {
-      "id": "REQ-56",
-      "requirement": "Generate and include new custom static image assets under frontend/public/assets/generated (logo, hero, background, icon set) and reference them from UI.",
-      "reason": "UI references generated asset paths (e.g., /assets/generated/taskora-logo.dim_512x512.png and taskora-hero...), but the diff summary does not show any added files under frontend/public/assets/generated.",
+      "id": "REQ-72",
+      "requirement": "Update frontend reward hooks and Transfers page to call the updated backend deposit-request method signature (including optional user transaction ID) and keep React Query cache invalidation so transfer history updates immediately after submission; errors via getErrorMessage.",
+      "reason": "TransfersPage now passes `txId`, but the corresponding reward hook mutation and its cache invalidation behavior are not shown (useRewardQueries is truncated). Cannot confirm immediate transfer-history refresh via query invalidation.",
       "evidence": [
-        "frontend/src/components/exchange/ExchangeHeader.tsx",
-        "frontend/src/components/taskora/pages/DashboardPage.tsx"
+        "frontend/src/components/taskora/pages/TransfersPage.tsx",
+        "frontend/src/hooks/useRewardQueries.ts"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "Added backend/migration.mo with an OldActor schema stub and a run() that returns an empty record (no migration logic).",
-      "reason": "The BuildRequest allows creating/updating backend/migration.mo only if an upgrade requires migrating existing stable state; the diff does not show an actual migration being performed (run returns {}). This appears unnecessary or incomplete relative to the stated migration policy.",
+      "description": "Large set of changes to ‘exchange’ UI/components (DepositForm, TradeTicket, TradeHistory, TransfersHistory, WalletActivity, WalletBalances, exchange AdminPanelPage) and related exchange React Query hooks.",
+      "reason": "BuildRequest focuses on Taskora Earn page and Taskora Transfers (Deposit) proof fields + backend deposit request txId; it does not request exchange trading UI refinements or exchange deposit/withdrawal admin tooling changes.",
       "evidence": [
-        "backend/migration.mo"
+        "frontend/src/components/exchange/DepositForm.tsx",
+        "frontend/src/components/exchange/pages/AdminPanelPage.tsx",
+        "frontend/src/components/exchange/TradeHistory.tsx",
+        "frontend/src/components/exchange/TradeTicket.tsx",
+        "frontend/src/components/exchange/TransfersHistory.tsx",
+        "frontend/src/components/exchange/WalletActivity.tsx",
+        "frontend/src/components/exchange/WalletBalances.tsx",
+        "frontend/src/hooks/useExchangeQueries.ts"
       ]
     }
   ],
-  "confidence": 0.64,
+  "confidence": 0.62,
   "changed_files": [
     "backend/main.mo",
     "backend/migration.mo",
     "frontend-file-summaries.txt",
-    "frontend/index.html",
-    "frontend/src/components/ExchangeAppShell.tsx",
-    "frontend/src/components/exchange/ExchangeHeader.tsx",
-    "frontend/src/components/exchange/SimulationDisclosure.tsx",
+    "frontend/src/components/exchange/DepositForm.tsx",
+    "frontend/src/components/exchange/TradeHistory.tsx",
+    "frontend/src/components/exchange/TradeTicket.tsx",
+    "frontend/src/components/exchange/TransfersHistory.tsx",
+    "frontend/src/components/exchange/WalletActivity.tsx",
+    "frontend/src/components/exchange/WalletBalances.tsx",
+    "frontend/src/components/exchange/WithdrawalForm.tsx",
+    "frontend/src/components/exchange/pages/AdminPanelPage.tsx",
     "frontend/src/components/taskora/pages/AdminPanelPage.tsx",
-    "frontend/src/components/taskora/pages/DashboardPage.tsx",
     "frontend/src/components/taskora/pages/EarnPage.tsx",
     "frontend/src/components/taskora/pages/TransfersPage.tsx",
-    "frontend/src/components/taskora/pages/VipPage.tsx",
+    "frontend/src/hooks/useExchangeQueries.ts",
+    "frontend/src/hooks/useLocalDepositProof.ts",
+    "frontend/src/hooks/useLocalEarnCatalog.ts",
+    "frontend/src/hooks/useLocalEarnClaims.ts",
+    "frontend/src/hooks/useLocalEarnQuota.ts",
     "frontend/src/hooks/useRewardQueries.ts",
-    "frontend/src/index.css",
-    "frontend/tailwind.config.js",
     "project_state.json"
   ]
 }

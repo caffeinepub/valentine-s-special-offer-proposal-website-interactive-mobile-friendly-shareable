@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useInternetIdentity } from '../hooks/useInternetIdentity';
-import { useGetCallerUserProfile, useIsCurrentUserAdmin } from '../hooks/useQueries';
+import { useGetCallerUserProfile } from '../hooks/useQueries';
+import { useGetOwnershipStatus, useIsOwner } from '../hooks/useRewardQueries';
 import { ExchangeHeader } from './exchange/ExchangeHeader';
 import { DashboardPage } from './taskora/pages/DashboardPage';
 import { EarnPage } from './taskora/pages/EarnPage';
@@ -8,10 +9,12 @@ import { VipPage } from './taskora/pages/VipPage';
 import { TransfersPage } from './taskora/pages/TransfersPage';
 import { AdminPanelPage } from './taskora/pages/AdminPanelPage';
 import { ProfileSetupModal } from './ProfileSetupModal';
+import { ClaimOwnershipCard } from './security/ClaimOwnershipCard';
+import { AccessDeniedPanel } from './security/AccessDeniedPanel';
+import { LoginRequiredPanel } from './security/LoginRequiredPanel';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { ShieldOff, Heart } from 'lucide-react';
+import { Heart } from 'lucide-react';
 
 type PageType = 'dashboard' | 'earn' | 'vip' | 'transfers' | 'admin';
 
@@ -19,10 +22,41 @@ export function ExchangeAppShell() {
   const [currentPage, setCurrentPage] = useState<PageType>('dashboard');
   const { identity, isInitializing } = useInternetIdentity();
   const { data: userProfile, isLoading: profileLoading, isFetched } = useGetCallerUserProfile();
-  const { data: isAdmin } = useIsCurrentUserAdmin();
+  const { data: ownershipStatus, isLoading: ownershipLoading } = useGetOwnershipStatus();
+  const { data: isOwner, isLoading: isOwnerLoading } = useIsOwner();
 
   const isAuthenticated = !!identity;
   const showProfileSetup = isAuthenticated && !profileLoading && isFetched && userProfile === null;
+
+  // Initialize page from URL hash on mount
+  useEffect(() => {
+    const hash = window.location.hash.slice(1); // Remove '#'
+    const path = hash.startsWith('/') ? hash.slice(1) : hash; // Remove leading '/'
+    
+    if (path && ['dashboard', 'earn', 'vip', 'transfers', 'admin'].includes(path)) {
+      setCurrentPage(path as PageType);
+    }
+  }, []);
+
+  // Update URL when page changes
+  useEffect(() => {
+    window.location.hash = `#/${currentPage}`;
+  }, [currentPage]);
+
+  // Listen for hash changes (back/forward navigation)
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.slice(1);
+      const path = hash.startsWith('/') ? hash.slice(1) : hash;
+      
+      if (path && ['dashboard', 'earn', 'vip', 'transfers', 'admin'].includes(path)) {
+        setCurrentPage(path as PageType);
+      }
+    };
+
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
 
   // Show loading skeleton during initialization
   if (isInitializing) {
@@ -39,31 +73,38 @@ export function ExchangeAppShell() {
   }
 
   const renderPage = () => {
-    // Admin page requires authentication and admin role
+    // Admin page requires special handling
     if (currentPage === 'admin') {
+      // Must be logged in
       if (!isAuthenticated) {
+        return <LoginRequiredPanel />;
+      }
+
+      // Loading ownership status
+      if (ownershipLoading || isOwnerLoading) {
         return (
           <Card>
             <CardHeader>
-              <CardTitle>Admin Access Required</CardTitle>
-              <CardDescription>Please log in to access the admin panel</CardDescription>
+              <Skeleton className="h-6 w-48" />
             </CardHeader>
+            <CardContent>
+              <Skeleton className="h-32 w-full" />
+            </CardContent>
           </Card>
         );
       }
 
-      if (!isAdmin) {
-        return (
-          <Alert variant="destructive">
-            <ShieldOff className="h-4 w-4" />
-            <AlertTitle>Access Denied</AlertTitle>
-            <AlertDescription>
-              You do not have permission to access the admin panel. Only administrators can view this page.
-            </AlertDescription>
-          </Alert>
-        );
+      // No owner set - show claim ownership card
+      if (ownershipStatus && !ownershipStatus.hasOwner) {
+        return <ClaimOwnershipCard />;
       }
 
+      // Owner is set but caller is not the owner
+      if (!isOwner) {
+        return <AccessDeniedPanel />;
+      }
+
+      // Caller is the owner - show admin panel
       return <AdminPanelPage />;
     }
 
